@@ -18,7 +18,6 @@ class emf:
     # Initializer / Instance Attributes
     def __init__(self, txtdirs):
         self.txtdirs = txtdirs
-        
 
     def estimateMF(self):
     
@@ -35,7 +34,7 @@ class emf:
             for afile in syncData[txtdir].keys():
                 temp_df = pd.read_csv('{}\{}.txt'.format(txtdir, afile), sep='-', header=None, index_col=0)
 
-                # remove start and end of recording
+                # remove start and end of recording from dataframe
                 temp_df = temp_df.drop(['{:16}'.format('Session start'), '{:16}'.format('Session stop')])
         
                 # add extra columns to the df and give them appropriate names; also fill in second (Npx true (sec)) and third (Opti (est frame)) column
@@ -55,4 +54,3 @@ class emf:
                 syncData[txtdir][afile] = temp_df
             
         return syncData
-                  

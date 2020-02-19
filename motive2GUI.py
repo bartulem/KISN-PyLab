@@ -17,16 +17,15 @@ import pickle
 
 
 class mtg:
-    
+
     # Initializer / Instance Attributes
     def __init__(self, thecsv, thetxt):
         self.thecsv = thecsv
         self.thetxt = thetxt
-        
-        
+
     def csvTOpkl(self, **kwargs):
-        
-        '''
+
+        """
         Parameters
         ----------
         **kwargs: dictionary
@@ -35,23 +34,23 @@ class mtg:
         samplingrate : int/float
             The sampling rate of the NPX system; defaults to 3e4.
         ----------
-        '''
-        
+        """
+
         # test that all the prerequisites are there
-        if(not os.path.exists(self.thecsv)):
+        if (not os.path.exists(self.thecsv)):
             print('Could not find {}, try again.'.format(self.thecsv))
             sys.exit()
-            
-        if(not os.path.exists(self.thetxt)):
+
+        if (not os.path.exists(self.thetxt)):
             print('Could not find {}, try again.'.format(self.thetxt))
             sys.exit()
-            
+
         print('Working on file: {}'.format(self.thecsv))
         t = time.time()
-        
+
         framerate = float([pd.read_csv(kwargs['framerate'], sep=';', header=0, index_col=0).iloc[0, -1] if 'framerate' in kwargs.keys() else 120.][0])
         samplingrate = int([kwargs['samplingrate'] if 'samplingrate' in kwargs.keys() else 3e4][0])
-        
+
         # get tracking data from .csv
         data = []
         with open(self.thecsv, 'r') as csvfile:
@@ -66,25 +65,25 @@ class mtg:
 
             for row in spamreader:
                 data.append(row)
-                
+
         frames = len(data)
-        
+
         # load .txt file and get relevant timestamps
         timeStamps = {'startratcamtimestamp': 0, 'stopratcamtimestamp': 0, 'startsessiontimestamp': 0, 'stopsessiontimestamp': 0, 'starttrackingtimestamp': 0, 'stoptrackingtimestamp': 0, }
         timeStamps_df = pd.read_csv('{}'.format(self.thetxt), sep='-', header=None, index_col=0)
         timeStamps['starttrackingtimestamp'] = int(timeStamps_df.iloc[2, 0])
         timeStamps['stoptrackingtimestamp'] = int(timeStamps_df.iloc[-3, 0])
         timeStamps['stopsessiontimestamp'] = int(timeStamps_df.iloc[-1, 0])
-        
+
         # load .csv file and get labelsdata
         labelsdict = {'Marker1': 0, 'Marker2': 1, 'Marker3': 2, 'Marker4': 3, 'Neck': 4, 'Back': 5, 'Ass': 6}
         labelsdata = pd.read_csv(self.thecsv, sep=',', nrows=2)
         labelsraw = labelsdata.iloc[1, :].tolist()[1:]
         labels = []
         for albaelind, alabel in enumerate(labelsraw):
-            if(albaelind % 3 == 0):
+            if (albaelind % 3 == 0):
                 labels.append(labelsdict[alabel.split(':')[-1]])
-        
+
         # get the final output dict ready (7 is the number of points, 5 is X, Y, Z, label, nans)
         final = {'points': [[[] for i in range(5)] for j in range(7)],
                  'pointlabels': {0: ['cyan',
@@ -117,7 +116,7 @@ class mtg:
                  'headoriginarray': [],
                  'boundingboxtransX': 0,
                  'boundingboxtransY': 0}
-        
+
         # the rest is Srikanth's
         CoOrdinatesOrder = [0, 2, 1]
         for i in range(7):
@@ -135,7 +134,7 @@ class mtg:
             for j in temp:
                 final['points'][i][3][j] = -1000000
                 final['points'][i][4][j] = -1000000
-                
+
         # save result to file
         with open('{}.pkl'.format(self.thecsv[:-4]), 'wb') as f:
             # protocol 2 because the GUI doesn't regonize anything above

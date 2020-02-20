@@ -35,7 +35,7 @@ requirements:
 
 test:
   imports:
-    -
+    - kisn-pylab
 
 about:
   home: https://github.com/bartulem/KISN-PyLab

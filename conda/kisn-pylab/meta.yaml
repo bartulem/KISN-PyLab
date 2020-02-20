@@ -15,20 +15,20 @@ requirements:
 
   run:
     - python
-    - importlib-metadata 1.5.*	
+    - importlib-metadata	
     - ipykernel 5.1.*	
     - ipython 7.12.*	
-    - ipython-genutils 0.2.*	
+    - ipython-genutils	
     - ipywidgets 7.5.*	
     - jedi 0.16.*
     - json5 0.9.*	
     - jsonschema 3.2.*	
     - jupyter 1.0.*	
-    - jupyter-client 5.3.*	
-    - jupyter-console 6.1.*
-    - jupyter-core 4.6.*	
+    - jupyter-client	
+    - jupyter-console
+    - jupyter-core	
     - jupyterlab 1.2.*	
-    - jupyterlab-server 1.0.*
+    - jupyterlab-server
     - matplotlib 3.1.*	
     - notebook 6.0.*	
     - numpy	

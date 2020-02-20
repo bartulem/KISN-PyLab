@@ -10,10 +10,10 @@ source:
 
 requirements:
   host:
-    - python =3.6
+    - python
 
   run:
-    - python =3.6
+    - python
     - importlib-metadata >=1.5.0	
     - ipykernel	>=5.1.4	
     - ipython	>=7.12.0	

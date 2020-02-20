@@ -17,6 +17,6 @@ setup(
     packages=find_packages(),
     long_description=read('README.md'),
     classifiers=[
-        "License :: OSI Approved :: BSD License",
+        "License :: GNU License",
     ],
 )

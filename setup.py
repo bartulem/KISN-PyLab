@@ -14,7 +14,7 @@ setup(
     license = "BSD",
     keywords = "ephys tracking imu",
     url = "https://github.com/bartulem/KISN-PyLab",
-    packages=find_packages()
+    packages=find_packages(),
     long_description=read('README'),
     classifiers=[
         "License :: OSI Approved :: BSD License",

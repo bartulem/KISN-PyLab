@@ -6,7 +6,7 @@ def read(fname):
     return open(os.path.join(os.path.dirname(__file__), fname)).read()
 
 setup(
-    name = "kisn_pylab",
+    name = "kisn-pylab",
     version = "1.0.0",
     author = "bartulem",
     author_email = "mimica.bartul@gmail.com",

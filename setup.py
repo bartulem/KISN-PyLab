@@ -1,5 +1,5 @@
 import os
-from setuptools import setup, find_packages
+from setuptools import setup
 
 # Utility function to read the README file.
 def read(fname):
@@ -14,9 +14,13 @@ setup(
     license = "LICENSE",
     keywords = "ephys tracking imu",
     url = "https://github.com/bartulem/KISN-PyLab",
-    packages=find_packages(),
+    packages=['kisn_pylab'],
     long_description=read('README.md'),
     classifiers=[
+        "Intended Audience :: Science/Research",
         "License :: GNU License",
+        "Natural Language :: English",
+        "Operating System :: OS Independent",
+        "Programming Language :: Python",
     ],
 )

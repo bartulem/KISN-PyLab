@@ -10,11 +10,11 @@ source:
   
 requirements:
   host:
-    - python
+    - python 3.7
     - setuptools
 
   run:
-    - python
+    - python 3.7
     - ipykernel 5.1.*	
     - ipython 7.12.*		
     - ipywidgets 7.5.*	

@@ -20,9 +20,10 @@ import pickle
 class concat:
 
     # Initializer / Instance Attributes
-    def __init__(self, fileDir, newFileName):
+    def __init__(self, fileDir, newFileName, futurepkl):
         self.fileDir = fileDir.replace('\\', '/')
         self.newFileName = newFileName.replace('\\', '/')
+        self.futurepkl = futurepkl.replace('\\', '/')
 
     def concatNPX(self, **kwargs):
 
@@ -120,6 +121,6 @@ class concat:
             print('Concatenation complete! It took {:.2f} seconds.'.format(time.time() - t))
 
         # save the fileLength dict
-        saveDict = open('{}.pkl'.format(self.newFileName[:-4]), 'wb')
+        saveDict = open('{}'.format(self.futurepkl), 'wb')
         pickle.dump(fileLengths, saveDict)
         saveDict.close()

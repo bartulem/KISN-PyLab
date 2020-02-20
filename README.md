@@ -1,5 +1,5 @@
 # KISN-PyLab
-#### Data processing pipeline for ephys and 3D tracking experiments
+### Data processing pipeline for ephys and 3D tracking experiments
 ---------------------------------------------------------------------------------
 This repository should facilitate the data processing pipeline for ephys, IMU and 3D tracking experiments.
 
@@ -13,3 +13,18 @@ It is useful for:
 
 Please refer to the executor notebook for further instructions.
 
+
+### Installation
+---------------------------------------------------------------------------------
+##### Prerequisites
+Anaconda [(Python 3.7 version)](https://www.anaconda.com/distribution/#download-section)
+
+##### Anaconda
+~~~bash
+conda install -c bartulem kisn_pylab
+~~~
+
+This should work on most platforms. Let me know if it doesn't. 
+
+##### Install from github
+If you have `git`, you can simply clone the KISN-PyLab repository with `git clone https://github.com/bartulem/KISN-PyLab.git`. Otherwise, you can download the compressed file to your computer. 

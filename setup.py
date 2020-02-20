@@ -13,7 +13,7 @@ setup(
     description = ("For running lab experiments"),
     license = "LICENSE",
     keywords = "ephys tracking imu",
-    url = "https://github.com/bartulem/KISN-PyLab",
+    url = "https://github.com/bartulem/KISN-PyLab/kisn_pylab",
     packages=find_packages(),
     long_description=read('README.md'),
     classifiers=[

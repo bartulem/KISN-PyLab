@@ -11,7 +11,7 @@ setup(
     author = "bartulem",
     author_email = "mimica.bartul@gmail.com",
     description = ("For running lab experiments"),
-    license = "BSD",
+    license = "LICENSE",
     keywords = "ephys tracking imu",
     url = "https://github.com/bartulem/KISN-PyLab",
     packages=find_packages(),

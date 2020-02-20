@@ -1,0 +1,29 @@
+{
+  "paths": [
+    {
+      "_path": "lib/python3.7/site-packages/kisn_pylab-1.0.0-py3.7.egg-info/PKG-INFO",
+      "path_type": "hardlink",
+      "sha256": "3031292150855d5dc89476f39dabad25d343597b95bda634c9221d24a8bad731",
+      "size_in_bytes": 1145
+    },
+    {
+      "_path": "lib/python3.7/site-packages/kisn_pylab-1.0.0-py3.7.egg-info/SOURCES.txt",
+      "path_type": "hardlink",
+      "sha256": "af49f8f6188cb9154a0d88a99f2b847266fcf5e00330a5917a4b2c9311fa9974",
+      "size_in_bytes": 154
+    },
+    {
+      "_path": "lib/python3.7/site-packages/kisn_pylab-1.0.0-py3.7.egg-info/dependency_links.txt",
+      "path_type": "hardlink",
+      "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+      "size_in_bytes": 1
+    },
+    {
+      "_path": "lib/python3.7/site-packages/kisn_pylab-1.0.0-py3.7.egg-info/top_level.txt",
+      "path_type": "hardlink",
+      "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+      "size_in_bytes": 1
+    }
+  ],
+  "paths_version": 1
+}

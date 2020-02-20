@@ -1,0 +1,131 @@
+{
+  "paths": [
+    {
+      "_path": "lib/python3.7/site-packages/kisn_pylab-1.0.0-py3.7.egg-info/PKG-INFO",
+      "path_type": "hardlink",
+      "sha256": "ba8955a31be3ecebe0d9ba76f83ee7ce246ddd31fa429673857e8a5c0e20f112",
+      "size_in_bytes": 2025
+    },
+    {
+      "_path": "lib/python3.7/site-packages/kisn_pylab-1.0.0-py3.7.egg-info/SOURCES.txt",
+      "path_type": "hardlink",
+      "sha256": "cfa19e9542823a7490fcc90bc67ae58b2c7e360e0322842090704a4fc7e628a4",
+      "size_in_bytes": 411
+    },
+    {
+      "_path": "lib/python3.7/site-packages/kisn_pylab-1.0.0-py3.7.egg-info/dependency_links.txt",
+      "path_type": "hardlink",
+      "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+      "size_in_bytes": 1
+    },
+    {
+      "_path": "lib/python3.7/site-packages/kisn_pylab-1.0.0-py3.7.egg-info/requires.txt",
+      "path_type": "hardlink",
+      "sha256": "e2f32a33aec9d514fc0d62a10e5e60382839d38942b21ce63c1d19377d899d4c",
+      "size_in_bytes": 35
+    },
+    {
+      "_path": "lib/python3.7/site-packages/kisn_pylab-1.0.0-py3.7.egg-info/top_level.txt",
+      "path_type": "hardlink",
+      "sha256": "db93f6ba109e540965b66001a98952f7a8cecef05a58245e3b2dc038ac4c999e",
+      "size_in_bytes": 11
+    },
+    {
+      "_path": "lib/python3.7/site-packages/kisn_pylab/__pycache__/concatenateNPX.cpython-37.pyc",
+      "path_type": "hardlink",
+      "sha256": "4b81bc9c6ac8d7fc453380f91e835d5b8c7122da2e35a62cc36290d72ef8ac4c",
+      "size_in_bytes": 3287
+    },
+    {
+      "_path": "lib/python3.7/site-packages/kisn_pylab/__pycache__/estimateMotiveFrames.cpython-37.pyc",
+      "path_type": "hardlink",
+      "sha256": "701034ff2c26fe72ec757a7e1383cc53fdcc463ebdeb0850e8a1df013ee286d7",
+      "size_in_bytes": 1640
+    },
+    {
+      "_path": "lib/python3.7/site-packages/kisn_pylab/__pycache__/motive2GUI.cpython-37.pyc",
+      "path_type": "hardlink",
+      "sha256": "31ababeaa786e61af2379376b0908392545151a31666551e8a20281b65c17f52",
+      "size_in_bytes": 4298
+    },
+    {
+      "_path": "lib/python3.7/site-packages/kisn_pylab/__pycache__/readSyncEvents.cpython-37.pyc",
+      "path_type": "hardlink",
+      "sha256": "ec638e7782ddc5e686d07b0e239742c7895baf8e63231f1ffe0b29169191a7a5",
+      "size_in_bytes": 2979
+    },
+    {
+      "_path": "lib/python3.7/site-packages/kisn_pylab/__pycache__/runKilosort.cpython-37.pyc",
+      "path_type": "hardlink",
+      "sha256": "3a721a3a83c6bb9929dad17c2cd73637525eeb7d06538e845ad501442830df0a",
+      "size_in_bytes": 874
+    },
+    {
+      "_path": "lib/python3.7/site-packages/kisn_pylab/__pycache__/saveSpikeTimes.cpython-37.pyc",
+      "path_type": "hardlink",
+      "sha256": "03cd747bc78683931c9bcb50e760eeb64761a9cdac898e57b83580382e65f83e",
+      "size_in_bytes": 4691
+    },
+    {
+      "_path": "lib/python3.7/site-packages/kisn_pylab/__pycache__/syncIMU.cpython-37.pyc",
+      "path_type": "hardlink",
+      "sha256": "71665c9e9844dec9db011daa9372fa918df0e1f1cfeae7c037edcd95bd14134b",
+      "size_in_bytes": 2354
+    },
+    {
+      "_path": "lib/python3.7/site-packages/kisn_pylab/__pycache__/syncRegression.cpython-37.pyc",
+      "path_type": "hardlink",
+      "sha256": "a02e05e764107c0c0b3fddf8a41b52482ba1857cdfa7a5028aa8bddc9e412a3f",
+      "size_in_bytes": 2133
+    },
+    {
+      "_path": "lib/python3.7/site-packages/kisn_pylab/concatenateNPX.py",
+      "path_type": "hardlink",
+      "sha256": "7ae7941c158e0c010345f59529262085d95dbbe5cf47ca9d21f93ade004fc040",
+      "size_in_bytes": 4841
+    },
+    {
+      "_path": "lib/python3.7/site-packages/kisn_pylab/estimateMotiveFrames.py",
+      "path_type": "hardlink",
+      "sha256": "bff9fc1852910f87aa7d774692d38b671bfda118c2bcc72f59c7e22a63a50a0f",
+      "size_in_bytes": 2117
+    },
+    {
+      "_path": "lib/python3.7/site-packages/kisn_pylab/motive2GUI.py",
+      "path_type": "hardlink",
+      "sha256": "ee7703da1fc866df5befb715185cb349a2e725304865aca4250680b53b53c4b1",
+      "size_in_bytes": 5747
+    },
+    {
+      "_path": "lib/python3.7/site-packages/kisn_pylab/readSyncEvents.py",
+      "path_type": "hardlink",
+      "sha256": "7ed5def8627138d857c25d585f2e194423392c396830df444f7effa839d56912",
+      "size_in_bytes": 4060
+    },
+    {
+      "_path": "lib/python3.7/site-packages/kisn_pylab/runKilosort.py",
+      "path_type": "hardlink",
+      "sha256": "9dce2ec7171c3cf38f06ef5f6c90ef75e6c60b937a226cd0a618fe0f07047da8",
+      "size_in_bytes": 799
+    },
+    {
+      "_path": "lib/python3.7/site-packages/kisn_pylab/saveSpikeTimes.py",
+      "path_type": "hardlink",
+      "sha256": "3089cb0081951d9f1028f2ce8e63bc6af65411ed7593f9043a5ab6b4ec8eee1b",
+      "size_in_bytes": 7393
+    },
+    {
+      "_path": "lib/python3.7/site-packages/kisn_pylab/syncIMU.py",
+      "path_type": "hardlink",
+      "sha256": "a611d39fba5bdf8a29d5f63e0ef8b95fdac2e083de71a64eaf417a33764cc5b6",
+      "size_in_bytes": 2691
+    },
+    {
+      "_path": "lib/python3.7/site-packages/kisn_pylab/syncRegression.py",
+      "path_type": "hardlink",
+      "sha256": "bf631cc6ede495f60f1866e13fe5ecdd8de6ec8edfefb5d8139565d682406081",
+      "size_in_bytes": 2670
+    }
+  ],
+  "paths_version": 1
+}

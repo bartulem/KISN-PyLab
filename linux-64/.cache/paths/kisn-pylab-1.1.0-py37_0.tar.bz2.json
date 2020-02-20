@@ -1,0 +1,17 @@
+{
+  "paths": [
+    {
+      "_path": "lib/python3.7/site-packages/kisn_pylab-1.0.0-py3.7.egg",
+      "path_type": "hardlink",
+      "sha256": "47378d2019254a1b5d1d4d44f7e62fdbba768d4388f6f28f44c16d7f684d8e3b",
+      "size_in_bytes": 1265
+    },
+    {
+      "_path": "lib/python3.7/site-packages/kisn_pylab.pth",
+      "path_type": "hardlink",
+      "sha256": "8896992428b632dbb2d8c1851ebf6c31399351df1ac204816cf8063ff2c84d92",
+      "size_in_bytes": 29
+    }
+  ],
+  "paths_version": 1
+}

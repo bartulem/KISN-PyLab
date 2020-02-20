@@ -20,7 +20,7 @@ class sst:
 
     # Initializer / Instance Attributes
     def __init__(self, thedir):
-        self.thedir = thedir.replace('\\', '/')
+        self.thedir = thedir
 
     def splitClusters(self, **kwargs):
 
@@ -53,15 +53,15 @@ class sst:
         pklfile = [kwargs['pklfile'] if 'pklfile' in kwargs.keys() and type(kwargs['pklfile']) == str else 0][0]
 
         # load the appropriate spike data
-        clusterInfo = pd.read_csv('{}/cluster_info.tsv'.format(self.thedir), sep="\t")  # info about all clusters
-        spikeClusters = np.load('{}/spike_clusters.npy'.format(self.thedir))  # cluster IDs of all the spikes
-        spikeTimes = np.load('{}/spike_times.npy'.format(self.thedir))  # spike times of all the clusters
+        clusterInfo = pd.read_csv('{}{}cluster_info.tsv'.format(self.thedir, os.sep), sep="\t")  # info about all clusters
+        spikeClusters = np.load('{}{}spike_clusters.npy'.format(self.thedir, os.sep))  # cluster IDs of all the spikes
+        spikeTimes = np.load('{}{}spike_times.npy'.format(self.thedir, os.sep))  # spike times of all the clusters
 
         # check if one or more files require splitting
         if (not onesession):
 
             # load the .pkl file with total file lengths
-            file = open('{}/{}'.format(self.thedir, pklfile), 'rb')
+            file = open('{}{}{}'.format(self.thedir, os.sep, pklfile), 'rb')
             fileLengths = pickle.load(file)
             file.close()
 
@@ -96,14 +96,14 @@ class sst:
 
             # save spike .mat files (only if there's more than *minspikes* spk/session!)
             for session in range(len(fileLengths.keys()) - 1):
-                path = '{}/session{}'.format(self.thedir, session + 1)
+                path = '{}{}session{}'.format(self.thedir, os.sep, session + 1)
                 if (not os.path.exists(path)):
                     os.makedirs(path)
 
                 cellcount = 0
                 for acell in allSpikeData.keys():
                     if (len(allSpikeData[acell]['session_{}'.format(session + 1)]) > minspikes):
-                        sio.savemat(path + '/' + acell + '.mat', {'cellTS': np.array(allSpikeData[acell]['session_{}'.format(session + 1)])}, oned_as='column')
+                        sio.savemat(path + os.sep + acell + '.mat', {'cellTS': np.array(allSpikeData[acell]['session_{}'.format(session + 1)])}, oned_as='column')
                         cellcount += 1
                     else:
                         del allSpikeData[acell]['session_{}'.format(session + 1)]

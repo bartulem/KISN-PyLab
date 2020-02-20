@@ -20,8 +20,8 @@ class mtg:
 
     # Initializer / Instance Attributes
     def __init__(self, thecsv, thetxt):
-        self.thecsv = thecsv.replace('\\', '/')
-        self.thetxt = thetxt.replace('\\', '/')
+        self.thecsv = thecsv
+        self.thetxt = thetxt
 
     def csvTOpkl(self, **kwargs):
 
@@ -48,7 +48,7 @@ class mtg:
         print('Working on file: {}'.format(self.thecsv))
         t = time.time()
 
-        framerate = float([pd.read_csv(kwargs['framerate'].replace('\\', '/'), sep=';', header=0, index_col=0).iloc[0, -1] if 'framerate' in kwargs.keys() else 120.][0])
+        framerate = float([pd.read_csv(kwargs['framerate'].replace('\\', os.sep), sep=';', header=0, index_col=0).iloc[0, -1] if 'framerate' in kwargs.keys() else 120.][0])
         samplingrate = int([kwargs['samplingrate'] if 'samplingrate' in kwargs.keys() else 3e4][0])
 
         # get tracking data from .csv

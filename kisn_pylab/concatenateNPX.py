@@ -21,9 +21,9 @@ class concat:
 
     # Initializer / Instance Attributes
     def __init__(self, fileDir, newFileName, futurepkl):
-        self.fileDir = fileDir.replace('\\', '/')
-        self.newFileName = newFileName.replace('\\', '/')
-        self.futurepkl = futurepkl.replace('\\', '/')
+        self.fileDir = fileDir
+        self.newFileName = newFileName
+        self.futurepkl = futurepkl
 
     def concatNPX(self, **kwargs):
 
@@ -54,7 +54,7 @@ class concat:
         fileLengths = {'totalLEnChangepoints': [0]}
         for afile in os.listdir(self.fileDir):
             if ('ap' in afile and 'bin' in afile):
-                npxFile = '{}/{}'.format(self.fileDir, afile)
+                npxFile = '{}{}{}'.format(self.fileDir, os.sep, afile)
                 filePaths.append(npxFile)
                 npxRecording = np.memmap(npxFile, mode='r', dtype=np.int16, order='C')
                 fileLengths[npxFile] = npxRecording.shape[0]

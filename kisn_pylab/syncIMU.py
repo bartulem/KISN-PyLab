@@ -8,6 +8,7 @@ Check if IMU data syncs well with Npx data.
 
 """
 
+import os
 import pandas as pd
 from scipy.stats import linregress
 import matplotlib.pyplot as plt
@@ -19,8 +20,8 @@ class imuS:
 
     # Initializer / Instance Attributes
     def __init__(self, txtsIMU, txtsNPX):
-        self.txtsIMU = txtsIMU.replace('\\', '/')
-        self.txtsNPX = txtsNPX.replace('\\', '/')
+        self.txtsIMU = txtsIMU
+        self.txtsNPX = txtsNPX
 
     def syncMilis(self):
 

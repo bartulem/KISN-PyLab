@@ -24,8 +24,8 @@ class read:
 
     # Initializer / Instance Attributes
     def __init__(self, npxFile, txtFile):
-        self.npxFile = npxFile
-        self.txtFile = txtFile
+        self.npxFile = npxFile.replace('\\', '/')
+        self.txtFile = txtFile.replace('\\', '/')
 
     def readSE(self, **kwargs):
 

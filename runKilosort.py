@@ -15,6 +15,9 @@ import sys
 
 
 def runKilo(fileDIR, kilosortDIR):
+
+    fileDIR = fileDIR.replace('\\', '/')
+    kilosortDIR = kilosortDIR.replace('\\', '/')
     
     # test that the dir is there
     if(not os.path.exists(fileDIR)):

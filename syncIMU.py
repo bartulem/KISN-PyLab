@@ -19,8 +19,8 @@ class imuS:
 
     # Initializer / Instance Attributes
     def __init__(self, txtsIMU, txtsNPX):
-        self.txtsIMU = txtsIMU
-        self.txtsNPX = txtsNPX
+        self.txtsIMU = txtsIMU.replace('\\', '/')
+        self.txtsNPX = txtsNPX.replace('\\', '/')
 
     def syncMilis(self):
 

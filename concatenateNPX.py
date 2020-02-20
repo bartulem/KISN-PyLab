@@ -21,8 +21,8 @@ class concat:
 
     # Initializer / Instance Attributes
     def __init__(self, fileDir, newFileName):
-        self.fileDir = fileDir
-        self.newFileName = newFileName
+        self.fileDir = fileDir.replace('\\', '/')
+        self.newFileName = newFileName.replace('\\', '/')
 
     def concatNPX(self, **kwargs):
 
@@ -53,7 +53,7 @@ class concat:
         fileLengths = {'totalLEnChangepoints': [0]}
         for afile in os.listdir(self.fileDir):
             if ('ap' in afile and 'bin' in afile):
-                npxFile = '{}\{}'.format(self.fileDir, afile)
+                npxFile = '{}/{}'.format(self.fileDir, afile)
                 filePaths.append(npxFile)
                 npxRecording = np.memmap(npxFile, mode='r', dtype=np.int16, order='C')
                 fileLengths[npxFile] = npxRecording.shape[0]
@@ -70,6 +70,8 @@ class concat:
                 sys.exit()
 
         if (not cmdPrompt):
+
+            t = time.time()
 
             # create new empty bin file & memmap array to load data into
             with open(self.newFileName, 'wb'):
@@ -99,7 +101,7 @@ class concat:
             del concFile
             gc.collect()
 
-            print('Concatenation complete!')
+            print('Concatenation complete! It took {:.2f} seconds.'.format(time.time() - t))
 
         else:
 
@@ -115,7 +117,7 @@ class concat:
             # outsource command and keep time
             t = time.time()
             os.system('cmd /c "{}"'.format(command))
-            print('Concatenation took {:.2f} seconds.\n'.format(time.time() - t))
+            print('Concatenation complete! It took {:.2f} seconds.'.format(time.time() - t))
 
         # save the fileLength dict
         saveDict = open('{}.pkl'.format(self.newFileName[:-4]), 'wb')

@@ -49,4 +49,4 @@ class lr:
                 self.syncData[txtdir][afile].iloc[0, -1] = round(1 / slope, 5)
 
                 # save df to csv file for posterity
-                self.syncData[txtdir][afile].to_csv(r'{}\{}.csv'.format(txtdir, afile), sep=';', header=True, index=True)
+                self.syncData[txtdir][afile].to_csv('{}/{}.csv'.format(txtdir, afile), sep=';', header=True, index=True)

@@ -20,7 +20,7 @@ class sst:
 
     # Initializer / Instance Attributes
     def __init__(self, thedir):
-        self.thedir = thedir
+        self.thedir = thedir.replace('\\', '/')
 
     def splitClusters(self, **kwargs):
 
@@ -29,9 +29,9 @@ class sst:
         ----------
         **kwargs: dictionary
         onesession : boolean (0/False or 1/True)
-            If "False" - splits multiple sessions, otherwise - converts spike times of one session to seconds; dafault to "True".
+            If "False" - splits multiple sessions, otherwise - converts spike times of one session to seconds; defaults to "True".
         minspikes : int/float
-            The minimum number of spikes; defaults to 100.
+            The minimum number of spikes a cluster should have to be saved; defaults to 100.
         pklfile : str
             Complete path to the .pkl file with total file lengths; defaults to 0.
         nchan : int/float
@@ -53,15 +53,15 @@ class sst:
         pklfile = [kwargs['pklfile'] if 'pklfile' in kwargs.keys() and type(kwargs['pklfile']) == str else 0][0]
 
         # load the appropriate spike data
-        clusterInfo = pd.read_csv('{}\cluster_info.tsv'.format(self.thedir), sep="\t")  # info about all clusters
-        spikeClusters = np.load('{}\spike_clusters.npy'.format(self.thedir))  # cluster IDs of all the spikes
-        spikeTimes = np.load('{}\spike_times.npy'.format(self.thedir))  # spike times of all the clusters
+        clusterInfo = pd.read_csv('{}/cluster_info.tsv'.format(self.thedir), sep="\t")  # info about all clusters
+        spikeClusters = np.load('{}/spike_clusters.npy'.format(self.thedir))  # cluster IDs of all the spikes
+        spikeTimes = np.load('{}/spike_times.npy'.format(self.thedir))  # spike times of all the clusters
 
         # check if one or more files require splitting
         if (not onesession):
 
             # load the .pkl file with total file lengths
-            file = open('{}\{}'.format(self.thedir, pklfile), 'rb')
+            file = open('{}/{}'.format(self.thedir, pklfile), 'rb')
             fileLengths = pickle.load(file)
             file.close()
 
@@ -96,14 +96,14 @@ class sst:
 
             # save spike .mat files (only if there's more than *minspikes* spk/session!)
             for session in range(len(fileLengths.keys()) - 1):
-                path = r'{}\session{}'.format(self.thedir, session + 1)
+                path = '{}/session{}'.format(self.thedir, session + 1)
                 if (not os.path.exists(path)):
                     os.makedirs(path)
 
                 cellcount = 0
                 for acell in allSpikeData.keys():
                     if (len(allSpikeData[acell]['session_{}'.format(session + 1)]) > minspikes):
-                        sio.savemat(path + '\\' + acell + '.mat', {'cellTS': np.array(allSpikeData[acell]['session_{}'.format(session + 1)])}, oned_as='column')
+                        sio.savemat(path + '/' + acell + '.mat', {'cellTS': np.array(allSpikeData[acell]['session_{}'.format(session + 1)])}, oned_as='column')
                         cellcount += 1
                     else:
                         del allSpikeData[acell]['session_{}'.format(session + 1)]
@@ -139,14 +139,14 @@ class sst:
                     allSpikeData['cell{}_ch{}'.format(clusterInfo.loc[indx, 'id'], clusterInfo.loc[indx, 'ch'])] = spikes
 
             # save spike .mat files (only if there's more than *minspikes* spk/session!)
-            path = r'{}\session1'.format(self.thedir)
+            path = '{}/session1'.format(self.thedir)
             if (not os.path.exists(path)):
                 os.makedirs(path)
 
             cellcount = 0
             for acell in allSpikeData.keys():
                 if (len(allSpikeData[acell]) > minspikes):
-                    sio.savemat(path + '\\' + acell + '.mat', {'cellTS': np.array(allSpikeData[acell])}, oned_as='column')
+                    sio.savemat(path + '/' + acell + '.mat', {'cellTS': np.array(allSpikeData[acell])}, oned_as='column')
                     cellcount += 1
 
             print('In this session, there are {} good clusters (above {} spikes).'.format(cellcount, minspikes))

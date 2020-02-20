@@ -17,7 +17,7 @@ class emf:
 
     # Initializer / Instance Attributes
     def __init__(self, txtdirs):
-        self.txtdirs = txtdirs
+        self.txtdirs = txtdirs.replace('\\', '/')
 
     def estimateMF(self):
     
@@ -32,7 +32,7 @@ class emf:
         # open each file and get TTL input start, LEDon(s) and TTL input stop
         for txtdir in self.txtdirs:
             for afile in syncData[txtdir].keys():
-                temp_df = pd.read_csv('{}\{}.txt'.format(txtdir, afile), sep='-', header=None, index_col=0)
+                temp_df = pd.read_csv('{}/{}.txt'.format(txtdir, afile), sep='-', header=None, index_col=0)
 
                 # remove start and end of recording from dataframe
                 temp_df = temp_df.drop(['{:16}'.format('Session start'), '{:16}'.format('Session stop')])

@@ -37,6 +37,10 @@ requirements:
     - setuptools >= 45.2.0.post20200210	
     - tqdm >= 4.42.1
 
+test:
+  imports:
+    -
+
 about:
   home: https://github.com/bartulem/KISN-PyLab
   license: GNU GENERAL PUBLIC LICENSE

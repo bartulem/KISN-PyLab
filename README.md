@@ -27,4 +27,4 @@ conda install -c bartulem kisn_pylab
 This should work on most platforms. Let me know if it doesn't. 
 
 ##### Install from github
-If you have `git`, you can simply clone the KISN-PyLab repository with `git clone https://github.com/bartulem/KISN-PyLab.git`. Otherwise, you can download the compressed file to your computer. 
+If you have `git`, you can simply clone the KISN-PyLab repository with `git clone https://github.com/bartulem/KISN-PyLab.git`. Otherwise, you can download the compressed file to your computer, depending on the OS. 

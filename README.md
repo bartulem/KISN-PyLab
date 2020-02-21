@@ -40,3 +40,15 @@ Confirm with 'Y' that you want to install this package. This should work on most
 
 ##### Github
 If you have `git`, you can simply clone the KISN-PyLab repository with `git clone https://github.com/bartulem/KISN-PyLab.git`. Otherwise, you can download the compressed file to your computer, depending on the OS. 
+
+After downloading KISN-PyLab, to install, run:
+
+~~~bash
+python setup.py install
+~~~
+
+If you are not root, run:
+
+~~~bash
+python setup.py install --user
+~~~

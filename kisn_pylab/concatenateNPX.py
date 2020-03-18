@@ -4,7 +4,19 @@
 
 @author: bartulem
 
-Script to concatenate Npx sessions into one file for running kilosort.
+Concatenate NPX sessions into one file for running kilosort.
+
+This script should be run if multiple sessions need to be merged before running kilosort.
+The primary reason for merging is the desire to keep the same cell IDs across the recorded
+sessions. It should be said that there are other (less intuitive) ways to preserve cell IDs
+and that merging is not always a good idea (e.g. if the sessions are separated by many hours).
+I offer two options for conducting the merging: (1) thorough Python (less convenient) which
+works well for smaller files (<10 Gb) as they need to be loaded into memory (I recommend
+at least 64 Gb RAM), (2) through the CMD prompt (recommended) which works well for larger files
+(>10 Gb) as it does not require a lot of memory. The end result of the process is a large new
+.bin file (concatenated recorded files) and a smaller binary .pkl file which stores the lengths
+of individual sessions (in terms of samples) and their changepoints in the newly created
+concatenated file.
 
 """
 
@@ -25,7 +37,7 @@ class concat:
         self.newFileName = newFileName
         self.futurepkl = futurepkl
 
-    def concatNPX(self, **kwargs):
+    def concat_npx(self, **kwargs):
 
         """
         Parameters
@@ -39,7 +51,7 @@ class concat:
         """
 
         # test that all the prerequisites are there
-        if (not os.path.exists(self.fileDir)):
+        if not os.path.exists(self.fileDir):
             print('Could not find directory {}, try again.'.format(self.fileDir))
             sys.exit()
 
@@ -53,24 +65,26 @@ class concat:
         filePaths = []
         fileLengths = {'totalLEnChangepoints': [0]}
         for afile in os.listdir(self.fileDir):
-            if ('ap' in afile and 'bin' in afile):
+            if 'ap' in afile and 'bin' in afile:
                 npxFile = '{}{}{}'.format(self.fileDir, os.sep, afile)
                 filePaths.append(npxFile)
                 npxRecording = np.memmap(npxFile, mode='r', dtype=np.int16, order='C')
                 fileLengths[npxFile] = npxRecording.shape[0]
-                if (len(fileLengths['totalLEnChangepoints']) == 1):
+                if len(fileLengths['totalLEnChangepoints']) == 1:
                     fileLengths['totalLEnChangepoints'].append(npxRecording.shape[0])
                 else:
                     fileLengths['totalLEnChangepoints'].append(npxRecording.shape[0] + fileLengths['totalLEnChangepoints'][-1])
 
                 print('Found file: {} with total length {}, or {} samples, or {} mins.'.format(npxFile, npxRecording.shape[0], npxRecording.shape[0] // nchan, round(npxRecording.shape[0] // nchan / 18e5, 2)))
+
+                # delete the big memmap obj from memory
                 del npxRecording
                 gc.collect()
             else:
                 print('No files in this directory!')
                 sys.exit()
 
-        if (not cmdPrompt):
+        if not cmdPrompt:
 
             t = time.time()
 
@@ -89,7 +103,7 @@ class concat:
             counter = 0
             for onefile in tqdm(filePaths):
                 npxRecording = np.memmap(onefile, mode='r', dtype=np.int16, order='C')
-                if (counter == 0):
+                if counter == 0:
                     concFile[:fileLengths[onefile]] = npxRecording
                     counter += fileLengths[onefile]
                 else:
@@ -109,7 +123,7 @@ class concat:
             # get all files in a command
             command = 'copy /b '
             for afileindx, afile in enumerate(filePaths):
-                if (afileindx < len(filePaths) - 1):
+                if afileindx < len(filePaths) - 1:
                     command += '{} + '.format(afile)
                 else:
                     command += '{} '.format(afile)

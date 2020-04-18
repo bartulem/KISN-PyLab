@@ -44,7 +44,7 @@ class sst:
             print('Could not find directory {}, try again.'.format(self.thedir))
             sys.exit()
 
-        # valid values for Booleans
+        # valid values for booleans
         validBools = [0, False, 1, True]
 
         onesession = [kwargs['onesession'] if 'onesession' in kwargs.keys() and kwargs['onesession'] in validBools else 1][0]
@@ -54,8 +54,8 @@ class sst:
 
         # load the appropriate spike data
         clusterInfo = pd.read_csv('{}{}cluster_info.tsv'.format(self.thedir, os.sep), sep="\t")  # info about all clusters
-        spikeClusters = np.load('{}{}spike_clusters.npy'.format(self.thedir, os.sep))  # cluster IDs of all the spikes
-        spikeTimes = np.load('{}{}spike_times.npy'.format(self.thedir, os.sep))  # spike times of all the clusters
+        spikeClusters = np.load('{}{}spike_clusters.npy'.format(self.thedir, os.sep))            # cluster IDs of all the spikes
+        spikeTimes = np.load('{}{}spike_times.npy'.format(self.thedir, os.sep))                  # spike times of all the clusters
 
         # check if one or more files require splitting
         if (not onesession):
@@ -80,8 +80,8 @@ class sst:
                         truth = True
                         while (truth):
                             for xx in range(len(fileLengths.keys()) - 1):
-                                lowerBound = fileLengths['totalLEnChangepoints'][xx] // nchan
-                                upperBound = fileLengths['totalLEnChangepoints'][xx + 1] // nchan
+                                lowerBound = fileLengths['total_len_changepoints'][xx] // nchan
+                                upperBound = fileLengths['total_len_changepoints'][xx + 1] // nchan
                                 if (lowerBound <= aspike < upperBound):
                                     spikesDict['session_{}'.format(xx + 1)].append((aspike - lowerBound) / 3e4)
                                     truth = False

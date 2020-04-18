@@ -4,7 +4,18 @@
 
 @author: bartulem
 
-Run kilosort.
+Run Kilosort2 through Python.
+
+As it stands (spring/summer 2020), to use Kilosort2 one still requires Matlab. To ensure it works,
+one needs a specific combination of Matlab, the GPU driver version and CUDA compiler files.
+On the lab computer, I set it up to work on Matlab R2019b, driver version 10.2. (GeForce RTX 2080 Ti)
+and v10.1 CUDA. !!! NB: a different Matlab or driver version would require different CUDA files !!!
+Additionally, since I don't change the config file from session to session, I wrote the script
+below to run Matlab code through Python, such that the whole processing pipeline would remain Pythonic.
+Apart from Matlab, in order for this to run, you need to install the "matlab engine"; further instructions
+can be found here: https://www.mathworks.com/help/matlab/matlab_external/install-the-matlab-engine-for-python.html
+However, if you need to modify the config file, you either need to change the code below accordingly
+or go to Matlab and run Kilosort2 the old school way.
 
 """
 
@@ -14,24 +25,21 @@ import os
 import sys
 
 
-def runKilo(fileDIR, kilosortDIR):
-
-    fileDIR = fileDIR
-    kilosortDIR = kilosortDIR
+def run_kilosort(file_dir, kilosort2_dir):
     
     # test that the dir is there
-    if(not os.path.exists(fileDIR)):
-        print('Could not find directory {}, try again.'.format(fileDIR))
+    if not os.path.exists(file_dir):
+        print('Could not find directory {}, try again.'.format(file_dir))
         sys.exit()
     
-    print('Kilosort to be run on file: {}.'.format(fileDIR))
+    print('Kilosort2 to be run on file: {}.'.format(file_dir))
     
-    # run kilosort
-    print('Running kilosort, please be patient - this could take 5-10 min.')
+    # run Kilosort2
+    print('Running Kilosort2, please be patient - this could take 5-10 minutes.')
     t = time.time()
     eng = matlab.engine.start_matlab()
-    eng.cd(kilosortDIR, nargout=0)
+    eng.cd(kilosort2_dir, nargout=0)
     eng.ls(nargout=0)
-    eng.master_kilosort(fileDIR, nargout=0)
+    eng.master_kilosort(file_dir, nargout=0)
     eng.quit()
-    print('Running kilosort took {:.2f} seconds.\n'.format(time.time() - t))
+    print('Running Kilosort2 took {:.2f} seconds.\n'.format(time.time() - t))

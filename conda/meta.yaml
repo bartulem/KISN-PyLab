@@ -1,4 +1,4 @@
-{% set version = "1.1.2" %}
+{% set version = "2.0.0" %}
 
 package:
   name: kisn_pylab
@@ -32,6 +32,9 @@ requirements:
     - pip 20.0.*
     - scipy 1.4.*	
     - tqdm 4.42.*
+    - plotly
+    - scikit-learn
+    - astropy
 
 test:
   imports:
@@ -39,5 +42,5 @@ test:
 
 about:
   home: https://github.com/bartulem/KISN-PyLab
-  license: GNU GENERAL PUBLIC LICENSE
+  license: MIT LICENSE
   license_file: LICENSE

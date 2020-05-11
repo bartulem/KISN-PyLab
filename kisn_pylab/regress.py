@@ -38,7 +38,7 @@ class LinRegression:
         ----------
         """
 
-        xy_order = [kwargs['xy_order'] if 'xy_order' in kwargs.keys() and type(kwargs['xy_order']) == 'str' and len(kwargs['xy_order']) == 2 else [0, 1]][0]
+        xy_order = [kwargs['xy_order'] if 'xy_order' in kwargs.keys() and type(kwargs['xy_order']) == list and len(kwargs['xy_order']) == 2 else [0, 1]][0]
         extra_data = [kwargs['extra_data'] if 'extra_data' in kwargs.keys() else 0][0]
 
         split_df = {'x_train': [], 'x_test': [], 'y_train': [], 'y_test': []}
@@ -63,7 +63,7 @@ class LinRegression:
                        'slope': np.ravel(model.coef_)[0], 'intercept': np.ravel(model.intercept_)[0]}
 
         # predict other data if required
-        if extra_data != 0:
+        if type(extra_data) != int:
             reshaped_extra_data = extra_data.reshape(extra_data.shape[0], 1)
             return_dict['extra_data_predictions'] = np.ravel(lm.predict(reshaped_extra_data))
 

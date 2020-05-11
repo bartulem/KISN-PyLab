@@ -27,19 +27,26 @@ import sys
 
 def run_kilosort(file_dir, kilosort2_dir):
     
-    # test that the dir is there
+    # check that the data directory is there
     if not os.path.exists(file_dir):
-        print('Could not find directory {}, try again.'.format(file_dir))
+        print('Could not find data directory {}, try again.'.format(file_dir))
+        sys.exit()
+
+    # check that the Kilosort2 directory is there
+    if not os.path.exists(kilosort2_dir):
+        print('Could not find Kilosort directory {}, try again.'.format(kilosort2_dir))
         sys.exit()
     
     print('Kilosort2 to be run on file: {}.'.format(file_dir))
     
     # run Kilosort2
-    print('Running Kilosort2, please be patient - this could take 5-10 minutes.')
+    print('Running Kilosort2, please be patient - this could take ~10 minutes.')
+
     t = time.time()
     eng = matlab.engine.start_matlab()
     eng.cd(kilosort2_dir, nargout=0)
     eng.ls(nargout=0)
     eng.master_kilosort(file_dir, nargout=0)
     eng.quit()
-    print('Running Kilosort2 took {:.2f} seconds.\n'.format(time.time() - t))
+
+    print('Finished! Running Kilosort2 took {:.2f} minutes.\n'.format((time.time() - t) / 60))

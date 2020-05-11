@@ -2,7 +2,7 @@ import os
 from setuptools import setup
 
 
-# ucd tility function to read the README file.
+# utility function to read the README file.
 def read(fname):
     return open(os.path.join(os.path.dirname(__file__), fname)).read()
 
@@ -12,7 +12,7 @@ setup(
     version="2.0.0",
     author="bartulem",
     author_email="mimica.bartul@gmail.com",
-    description=("For running lab experiments"),
+    description=("For running e-phys/3D tracking experiments"),
     license="LICENSE",
     keywords="ephys tracking imu",
     url="https://github.com/bartulem/KISN-PyLab",
@@ -24,5 +24,5 @@ setup(
         "Natural Language :: English",
         "Operating System :: OS Independent",
         "Programming Language :: Python",
-    ], install_requires=['pandas', 'numpy', 'tqdm', 'scipy', 'matplotlib', 'scikit-learn', 'plotly']
+    ], install_requires=['pandas', 'numpy', 'tqdm', 'scipy', 'matplotlib', 'scikit-learn', 'plotly', 'astropy']
 )

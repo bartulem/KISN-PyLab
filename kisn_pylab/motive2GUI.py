@@ -7,14 +7,13 @@
 Convert the labeled tracking .csv to .pkl for loading into the GUI.
 
 The Jython GUI we use to visualize the behavior of the animal requires
-the labeled .csv data to have a certain format (in order to be loadable).
+the labeled .csv data to have a certain format (in order to be loaded).
 This script performs those modifications and when the process is complete,
 the .pkl file can be loaded in the *trackedpointdata_V3_5_LEDs.py* version
 of the GUI which allows for the visualization of arena LEDs as well.
 
 """
 
-import pandas as pd
 import os
 import sys
 import csv
@@ -22,12 +21,12 @@ import time
 import pickle
 
 
-class MotiveGUI:
+class Transformer:
 
     # initializer / instance attributes
-    def __init__(self, the_csv, the_pkl):
+    def __init__(self, the_csv, sync_pkl):
         self.the_csv = the_csv
-        self.the_pkl = the_pkl
+        self.sync_pkl = sync_pkl
 
     def csv_to_pkl(self, **kwargs):
 
@@ -39,58 +38,52 @@ class MotiveGUI:
             The empirical camera frame rate for that session; defaults to 120.
         npx_sampling_rate : int/float
             The sampling rate of the NPX system; defaults to 3e4.
-        reference_probe : int/float
+        ground_probe : int/float
             The probe other probes are referenced to; defaults to 0 (as in imec0).
         ----------
         """
 
-        # test that all the prerequisites are there
+        # check that all the prerequisites are there
         if not os.path.exists(self.the_csv):
             print('Could not find {}, try again.'.format(self.the_csv))
             sys.exit()
 
-        if not os.path.exists(self.the_pkl):
-            print('Could not find {}, try again.'.format(self.the_pkl))
+        if not os.path.exists(self.sync_pkl):
+            print('Could not find {}, try again.'.format(self.sync_pkl))
             sys.exit()
 
         print('Working on file: {}.'.format(self.the_csv))
         t = time.time()
 
         # load empirical frame rate from file if it exists
-        with open(self.the_pkl, 'rb') as the_pkl:
+        with open(self.sync_pkl, 'rb') as the_pkl:
             full_pkl_file = pickle.load(the_pkl)
             empirical_frame_rate = full_pkl_file.iloc[0, -1]
 
         frame_rate = float([kwargs['frame_rate'] if 'frame_rate' in kwargs.keys() else 120. if int(round(empirical_frame_rate)) != 120 else empirical_frame_rate][0])
         npx_sampling_rate = int([kwargs['npx_sampling_rate'] if 'npx_sampling_rate' in kwargs.keys() else 3e4][0])
-        reference_probe = int([kwargs['reference_probe'] if 'reference_probe' in kwargs.keys() else 0][0])
+        ground_probe = int([kwargs['ground_probe'] if 'ground_probe' in kwargs.keys() else 0][0])
 
         # get tracking data from .csv
         data = []
         with open(self.the_csv, 'r') as csvfile:
-            spamreader = csv.reader(csvfile, delimiter=',')
-            next(spamreader, 7)
-            next(spamreader, 7)
-            next(spamreader, 7)
-            next(spamreader, 7)
-            next(spamreader, 7)
-            next(spamreader, 7)
-            next(spamreader, 7)
-
-            for row in spamreader:
-                data.append(row)
+            for rowindx, row in enumerate(csv.reader(csvfile, delimiter=',')):
+                if rowindx == 3:
+                    labels_raw = row[2:]
+                elif rowindx >= 7:
+                    data.append(row)
 
         frames = len(data)
 
         # load .txt file and get relevant timestamps
-        time_stamps = {'startratcamtimestamp': 0, 'stopratcamtimestamp': 0, 'startsessiontimestamp': 0, 'stopsessiontimestamp': int(full_pkl_file.iloc[-1, reference_probe]),
-                       'starttrackingtimestamp': int(full_pkl_file.iloc[2, reference_probe]), 'stoptrackingtimestamp': int(full_pkl_file.iloc[-3, reference_probe])}
+        time_stamps = {'startratcamtimestamp': int(full_pkl_file.iloc[2, ground_probe]), 'stopratcamtimestamp': int(full_pkl_file.iloc[-3, ground_probe]), 'startsessiontimestamp': 0,
+                       'stopsessiontimestamp': int(full_pkl_file.iloc[-1, ground_probe]), 'starttrackingtimestamp': int(full_pkl_file.iloc[2, ground_probe]),
+                       'stoptrackingtimestamp': int(full_pkl_file.iloc[-3, ground_probe])}
 
         # load .csv file and get labels data
         labels_dict = {'Marker1': 0, 'Marker2': 1, 'Marker3': 2, 'Marker4': 3, 'Neck': 4, 'Back': 5, 'Ass': 6, 'LED1': 7, 'LED2': 8, 'LED3': 9}
         num_of_markers = len(labels_dict.keys())
-        labels_data = pd.read_csv(self.the_csv, sep=',', nrows=2)
-        labels_raw = labels_data.iloc[1, :].tolist()[1:]
+
         labels = []
         for albaelind, alabel in enumerate(labels_raw):
             if albaelind % 3 == 0 and 'LED' not in alabel:
@@ -130,7 +123,7 @@ class MotiveGUI:
                  'stopratcamtimestamp': time_stamps['stopratcamtimestamp'] / npx_sampling_rate,
                  'boundingboxrotation': 0,
                  'headXarray': [],
-                 'frame_rate': frame_rate,
+                 'framerate': frame_rate,
                  'headZarray': [],
                  'headYarray': [],
                  'headoriginarray': [],
@@ -157,7 +150,7 @@ class MotiveGUI:
 
         # save result to file
         with open('{}.pkl'.format(self.the_csv[:-4]), 'wb') as f:
-            # protocol 2 because the GUI doesn't recognize anything above
+            # protocol 2 because the GUI requires it / this may change in subsequent renditions
             pickle.dump(final, f, protocol=2)
 
         print('Conversion complete! The process took {:.2f} seconds.'.format(time.time() - t))

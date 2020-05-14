@@ -204,7 +204,7 @@ class ExtractSpikes:
                                 print('{} has {} spikes.'.format(asession, len(spikes_dict[asession])))
                             print('In total, {} spikes have been accounted for.'.format(sum([len(spikes_dict[key]) for key in spikes_dict.keys()])))
 
-                        probe_spike_data['imec{}_cell{}_ch{}'.format(probe_id, cluster_info.loc[indx, 'id'], cluster_info.loc[indx, 'ch'])] = spikes_dict
+                        probe_spike_data['imec{}_cell{:03d}_ch{:03d}'.format(probe_id, cluster_info.loc[indx, 'id'], cluster_info.loc[indx, 'ch'])] = spikes_dict
 
                 # save spike .mat files (only if there's more than *min_spikes* spk/session!)
                 for session in range(len(file_lengths.keys()) - 1):
@@ -296,7 +296,7 @@ class ExtractSpikes:
                                 if aspike > 0:
                                     spikes.append(int(round(aspike)) / npx_sampling_rate)
 
-                        probe_spike_data['imec{}_cell{}_ch{}'.format(probe_id, cluster_info.loc[indx, 'id'], cluster_info.loc[indx, 'ch'])] = spikes
+                        probe_spike_data['imec{}_cell{:03d}_ch{:03dg}'.format(probe_id, cluster_info.loc[indx, 'id'], cluster_info.loc[indx, 'ch'])] = spikes
 
                 # save spike .mat files (only if there's more than *min_spikes* spk/session!)
                 path = '{}{}imec{}_session1'.format(spike_dict[probe]['dir'], os.sep, probe_id)

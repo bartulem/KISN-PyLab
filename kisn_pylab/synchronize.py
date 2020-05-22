@@ -43,7 +43,7 @@ class Sync:
         ground_probe : int
             In a multi probe setting, the probe other probes are synced to; defaults to 0.
         imu_files : list
-            The list of absolute paths to imu_pkl files that contain the raw IMU data: defaults to 0.
+            The list of absolute paths to imu_pkl files that contain the raw IMU data; defaults to 0.
         ----------
         """
 

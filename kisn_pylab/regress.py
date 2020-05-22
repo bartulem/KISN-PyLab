@@ -16,6 +16,7 @@ and extra_data to be predicted by the model.
 """
 
 import numpy as np
+import pandas as pd
 from sklearn import linear_model
 
 
@@ -42,6 +43,11 @@ class LinRegression:
         extra_data = [kwargs['extra_data'] if 'extra_data' in kwargs.keys() else 0][0]
 
         split_df = {'x_train': [], 'x_test': [], 'y_train': [], 'y_test': []}
+
+        # check if the input dataframe has nans, and if so - eliminate those rows
+        if self.input_data.isnull().values.any():
+            print('{} row(s) has/have NAN values and will be removed.'.format(self.input_data.isnull().any(axis=1).sum()))
+            self.input_data = pd.DataFrame.dropna(self.input_data)
 
         # even indices are test, odd indices are train data
         for indx in range(self.input_data.shape[0]):

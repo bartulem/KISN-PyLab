@@ -27,9 +27,8 @@ import plotly.graph_objects as go
 class Sync:
 
     # initializer / instance attributes
-    def __init__(self, sync_pkls, imu_files):
+    def __init__(self, sync_pkls):
         self.sync_pkls = sync_pkls
-        self.imu_files = imu_files
 
     def estimate_sync_quality(self, **kwargs):
 
@@ -43,6 +42,8 @@ class Sync:
             To plot or not to plot y_test and y_test_prediction scatter plot; defaults to 0.
         ground_probe : int
             In a multi probe setting, the probe other probes are synced to; defaults to 0.
+        imu_files : list
+            The list of absolute paths to imu_pkl files that contain the raw IMU data: defaults to 0.
         ----------
         """
 
@@ -52,6 +53,7 @@ class Sync:
         to_plot = [kwargs['to_plot'] if 'to_plot' in kwargs.keys() and kwargs['to_plot'] in valid_bools else 0][0]
         npx_sampling_rate = float([kwargs['npx_sampling_rate'] if 'npx_sampling_rate' in kwargs.keys() else 3e4][0])
         ground_probe = int([kwargs['ground_probe'] if 'ground_probe' in kwargs.keys() else 0][0])
+        imu_files = [kwargs['imu_files'] if 'imu_files' in kwargs.keys() and type(kwargs['imu_files']) == list else 0][0]
 
         # save the sync and IMU data in a dictionary where file names are keys
         sync_data = {}
@@ -63,23 +65,24 @@ class Sync:
                 with open(pkl_file, 'rb') as one_file:
                     sync_data[pkl_file] = pickle.load(one_file)
 
-                if os.path.exists(self.imu_files[fileind]):
+                if imu_files != 0:
+                    if os.path.exists(imu_files[fileind]):
 
-                    with open(self.imu_files[fileind], 'rb') as imu_file:
-                        temp_file = pickle.load(imu_file)
+                        with open(imu_files[fileind], 'rb') as imu_file:
+                            temp_file = pickle.load(imu_file)
 
-                    sample_array = temp_file['sample.time (ms)'].tolist()
+                        sample_array = temp_file['sample.time (ms)'].tolist()
 
-                    diffs = np.zeros(len(sample_array) - 1)
-                    for ind, item in enumerate(sample_array):
-                        if 0 < ind < len(sample_array)-1:
-                            diffs[ind] = item - sample_array[ind - 1]
+                        diffs = np.zeros(len(sample_array) - 1)
+                        for ind, item in enumerate(sample_array):
+                            if 0 < ind < len(sample_array)-1:
+                                diffs[ind] = item - sample_array[ind - 1]
 
-                    teensy_times[pkl_file] = diffs
+                        teensy_times[pkl_file] = diffs
 
-                else:
-                    print('File: {} does not exist!'.format(self.imu_files[fileind]))
-                    sys.exit()
+                    else:
+                        print('File: {} does not exist!'.format(imu_files[fileind]))
+                        sys.exit()
 
             else:
                 print('File: {} does not exist!'.format(pkl_file))
@@ -179,7 +182,7 @@ class Sync:
                         fig['layout']['yaxis{}'.format(fig_order[indx][1])].update(title='count')
                     fig.show()
 
-                    if data_stream != 'tracking':
+                    if data_stream != 'tracking' and imu_files != 0:
                         # plot the distribution of time differences between successive Teensy samples
                         print('The minimum difference between subsequent Teensy samples is {} ms, while the maximum is {} ms.'.format(np.min(teensy_times[file_key]), np.max(teensy_times[file_key])))
                         fig2 = go.Figure()

@@ -124,7 +124,7 @@ class Concat:
             print('The concatenated file has total length of {}, or {} samples, or {} minutes.'.format(concatenated_file.shape[0], concatenated_file.shape[0] // nchan, round(concatenated_file.shape[0] // nchan / (npx_sampling_rate*60), 2)))
 
             # fill it with data
-            print('Concatenating files, please be patient - this can take >10 minutes.')
+            print('Concatenating files, please be patient - this could take >1 hour.')
             time.sleep(1)
 
             counter = 0
@@ -149,7 +149,7 @@ class Concat:
 
         else:
 
-            print('Concatenating files, please be patient - this can take >10 minutes.')
+            print('Concatenating files, please be patient - this could take >1 hour.')
             time.sleep(1)
 
             # get all files in a command

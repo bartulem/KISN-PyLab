@@ -226,7 +226,7 @@ class EventReader:
                                 changed_list.append('')
                     corrected_frames[i + 7] = changed_list
 
-                elif i < (original_tracking_data.shape[0] - 1) and not original_tracking_data.iloc[i, 2:].isnull().values.all() and original_tracking_data.iloc[i, columnofint:columnofint+9].isnull().values.all() and not original_tracking_data.iloc[i-half_smooth_window:i, columnofint:columnofint+9].isnull().values.all() and not original_tracking_data.iloc[i:i+half_smooth_window+1, columnofint:columnofint+9].isnull().values.all():
+                elif i < (original_tracking_data.shape[0] - 1) and not original_tracking_data.iloc[i, 2:].isnull().values.all() and original_tracking_data.iloc[i, columnofint:columnofint+9].isnull().values.all() and original_tracking_data.iloc[i-half_smooth_window:i, columnofint:columnofint+9].isnull().all(axis=1).sum() == 0 and original_tracking_data.iloc[i:i+half_smooth_window+1, columnofint:columnofint+9].isnull().all(axis=1).sum() == 0:
                     changed_array = np.zeros(original_tracking_data.shape[1])
                     for inx in range(len(changed_array)):
                         if inx not in led_cols:
@@ -275,11 +275,11 @@ class EventReader:
 
             tracking_sync['TTL input start'] = 0
             for row in tqdm(range(tracking_data.shape[0])):
-                if not tracking_data.iloc[row, columnofint:(columnofint + 9)].isnull().values.all() and tracking_data.iloc[row - 1, columnofint:(columnofint + 9)].isnull().values.all() and not tracking_data.iloc[row + int(round(half_smooth_window / 2)) + 1, columnofint:(columnofint + 9)].isnull().values.all():
+                if not tracking_data.iloc[row, columnofint:(columnofint + 9)].isnull().values.all() and tracking_data.iloc[row - 1, columnofint:(columnofint + 9)].isnull().values.all() and tracking_data.iloc[row: row + int(round(half_smooth_window / 2)) + 1, columnofint:(columnofint + 9)].isnull().all(axis=1).sum() == 0:
                     tracking_sync['{}LEDon'.format(tracking_on)] = tracking_data.loc[row, 'Frame']
                     all_led_frames.append(tracking_data.loc[row, 'Frame'])
                     tracking_on += 1
-                elif tracking_data.iloc[row, columnofint:(columnofint + 9)].isnull().values.all() and not tracking_data.iloc[row - 1, columnofint:(columnofint + 9)].isnull().values.all() and not tracking_data.iloc[row - int(round(half_smooth_window / 2)), columnofint:(columnofint + 9)].isnull().values.all():
+                elif tracking_data.iloc[row, columnofint:(columnofint + 9)].isnull().values.all() and not tracking_data.iloc[row - 1, columnofint:(columnofint + 9)].isnull().values.all() and tracking_data.iloc[row - int(round(half_smooth_window / 2)): row, columnofint:(columnofint + 9)].isnull().all(axis=1).sum() == 0:
                     if ledoff:
                         tracking_sync['{}LEDoff'.format(tracking_off)] = tracking_data.loc[row, 'Frame']
                         all_led_frames.append(tracking_data.loc[row, 'Frame'])

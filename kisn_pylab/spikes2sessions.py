@@ -174,7 +174,7 @@ class ExtractSpikes:
 
                                     # prepare arrays for plotting and check if the transformation is acceptable
                                     y_session_test = regression_session_dict['y_test']
-                                    y_session_test_predictions = np.array([int(round(sample) for sample in regression_session_dict['y_test_predictions'])])
+                                    y_session_test_predictions = np.array([int(round(sample)) for sample in regression_session_dict['y_test_predictions']])
                                     true_predicted_differences = (y_session_test - y_session_test_predictions) / (npx_sampling_rate / 1e3)
                                     print('The differences between session {} imec test and imec test predictions are: median {:.2f} ms, mean {:.2f} ms, max {:.2f} ms.'.format(sessionindx + 1, np.abs(np.nanmedian(true_predicted_differences)), np.abs(np.nanmean(true_predicted_differences)), np.nanmax(np.abs(true_predicted_differences))))
 

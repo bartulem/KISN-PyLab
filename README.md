@@ -1,4 +1,4 @@
-# KISN-PyLab (v.3.0.0)
+# KISN-PyLab (v3.0.0)
 ### Data processing pipeline for e-phys and 3D tracking experiments
 ---------------------------------------------------------------------------------
 This repository should facilitate the data processing pipeline for e-phys, IMU and 3D tracking experiments.

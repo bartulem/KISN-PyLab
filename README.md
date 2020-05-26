@@ -1,4 +1,4 @@
-# KISN-PyLab
+# KISN-PyLab (v.3.0.0)
 ### Data processing pipeline for e-phys and 3D tracking experiments
 ---------------------------------------------------------------------------------
 This repository should facilitate the data processing pipeline for e-phys, IMU and 3D tracking experiments.
@@ -6,7 +6,7 @@ This repository should facilitate the data processing pipeline for e-phys, IMU a
 It is useful, in single- or multi-probe settings, for:
 1. concatenating multiple Neuropixel recording sessions
 2. running Kilosort2 through Python
-3. reading sync events from the Neuropixel recording, tracking and IMU files
+3. reading random sync events from the Neuropixel recording, tracking and IMU files
 4. assessing whether the recording, tracking and IMU systems are synced
 5. splitting clusters back to original sessions / getting spike times
 6. converting raw tracking files to a format loadable by the lab GUI

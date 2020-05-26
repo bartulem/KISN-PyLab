@@ -6,17 +6,22 @@
 
 Read in sync events from all desired data streams.
 
-Neuropixel recordings are saved into a *1D binary vector*, from a 2D array organised as 385 rows (channels) x n columns (samples). 
-The data are written to file from this matrix in column-major (F) order, i.e., the first sample in the recording was written to file 
+Neuropixel recordings are saved into a *1D binary vector*, from a 2D array organised as 385 rows (channels) x n columns (samples).
+The data are written to file from this matrix in column-major (F) order, i.e., the first sample in the recording was written to file
 for every channel, then the second sample was written for every channel, etc. Neuropixel raw data is provided as an int16 binary.
 Neuropixel ADCs are 10 bits, with a range of -0.6 to 0.6 V, and acquisition was at 500x gain, yielding a resolution of 2.34 µV/bit.
 To obtain readings in µV, you should multiply the int16 values by 2.34.
 
-This script has the purpose of extracting sync events from three independent data streams: (1) NPX recording files (may be one or
+This script has the purpose of extracting LEDon sync events from three independent data streams: (1) NPX recording files (may be one or
 two in a given session, depending on the number of probes), (2) the exported Motive tracking file, and (3) the IMU sensor file,
-all of which keep track of the LEDon & LEDoff occurrences. The code goes through all of those files and picks up the LED events,
-(taking into account that the LED signal jitters, which can be probe independent) saving the complete data frame to a separate
-binary .pkl file. This code consumes a lot of RAM (64Gb should be enough in most cases).
+all of which keep track of the LEDon occurrences. Unlike v2.0.0, future versions will assume the LED pulses are generated continuously
+and randomly (with a fixed 250ms duration, and 250-1500ms IPI).
+
+The code first goes through all of those files and picks up the LED events, (taking into account that the LED signal jitters,
+which can be probe independent). It then selects a portion of the starting and ending LED pulses in the tracking data stream
+(10 by default) and tries to match these templates in the other data streams, aligning the start and end of tracking to different
+recordings. All the corresponding LED events in all data streams are stored in a dataframe, which is saved to a separate
+binary .pkl file. This code might consume a lot of RAM (64Gb should be enough in most cases).
 
 """
 
@@ -52,8 +57,6 @@ class EventReader:
             Total number of channels on the NPX probe, for Probe3b should be 385; defaults to 385.
         sync_chan : int/float
             Sync port channel number, for Probe3b should be 385; defaults to 385.
-        ledoff : boolean (0/False or 1/True)
-            Whether to consider the LEDoff times; defaults to 0.
         track_file : str/boolean
             The absolute path to the tracking data .csv file; defaults to 0.
         imu_file : str/boolean
@@ -66,21 +69,32 @@ class EventReader:
             Number of frames in the tracking data that are smoothed over to correct nans in fully empty frames; defaults to 10.
         ground_probe : int
             In a multi probe setting, the probe other probes are synced to; defaults to 0.
+        frame_rate : str (file path)
+            The tracking camera frame rate for that session; defaults to 120.
+        npx_sampling_rate : int/float
+            The sampling rate of the NPX system; defaults to 3e4.
+        sync_sequence : int/float
+            The length of the sequence the LED events should be matched across data streams; defaults to 10.
+        sample_error : int/float
+            The time the presumed IMEC LEDs could be allowed to err around; defaults to 15 (ms).
+        which_imu_time : int/float
+            The IMU time to be used in the analyses, loop.starttime (0) or sample.time (1); defaults to 1.
         ----------
         """
 
-        # valid values for booleans
-        valid_bools = [0, False, 1, True]
-
         nchan = int([kwargs['nchan'] if 'nchan' in kwargs.keys() and (type(kwargs['nchan']) == int or type(kwargs['nchan']) == float) else 385][0])
         sync_chan = int([kwargs['sync_chan'] if 'sync_chan' in kwargs.keys() and (type(kwargs['sync_chan']) == int or type(kwargs['sync_chan']) == float) else 385][0])
-        ledoff = [kwargs['ledoff'] if 'ledoff' in kwargs.keys() and kwargs['ledoff'] in valid_bools else 0][0]
         track_file = [kwargs['track_file'] if 'track_file' in kwargs.keys() and type(kwargs['track_file']) == str else 0][0]
         imu_file = [kwargs['imu_file'] if 'imu_file' in kwargs.keys() and type(kwargs['imu_file']) == str else 0][0]
         imu_pkl = [kwargs['imu_pkl'] if 'imu_pkl' in kwargs.keys() and type(kwargs['imu_pkl']) == str else 0][0]
         jitter_samples = int([kwargs['jitter_samples'] if 'jitter_samples' in kwargs.keys() and (type(kwargs['jitter_samples']) == int or type(kwargs['jitter_samples']) == float) else 3][0])
         half_smooth_window = int([kwargs['half_smooth_window'] if 'half_smooth_window' in kwargs.keys() and (type(kwargs['half_smooth_window']) == int or type(kwargs['half_smooth_window']) == float) else 10][0])
         ground_probe = int([kwargs['ground_probe'] if 'ground_probe' in kwargs.keys() else 0][0])
+        frame_rate = float([kwargs['frame_rate'] if 'frame_rate' in kwargs.keys() else 120.][0])
+        npx_sampling_rate = int([kwargs['npx_sampling_rate'] if 'npx_sampling_rate' in kwargs.keys() else 3e4][0])
+        sync_sequence = int([kwargs['sync_sequence'] if 'sync_sequence' in kwargs.keys() else 10][0])
+        sample_error = int([kwargs['sample_error'] if 'sample_error' in kwargs.keys() and (type(kwargs['sample_error']) == int or type(kwargs['sample_error']) == float) else 15][0])
+        which_imu_time = int([kwargs['which_imu_time'] if 'which_imu_time' in kwargs.keys() and (type(kwargs['which_imu_time']) == int or type(kwargs['which_imu_time']) == float) else 1][0])
 
         # check that the NPX files are there
         for anpxfile in self.npx_files:
@@ -100,7 +114,7 @@ class EventReader:
             # give it a 2s break
             time.sleep(2)
 
-            # memmaps are used for accessing small segments of large files on disk, without reading the entire file into memory.
+            # memory maps are used for accessing small segments of large files on disk, without reading the entire file into memory.
             npx_recording = np.memmap(anpxfile, mode='r', dtype=np.int16, order='C')
 
             # integer divide the length of the recording by channel count to get number of samples
@@ -131,32 +145,14 @@ class EventReader:
             high_val = np.nanmax(most_freq_two_values)
             low_val = np.nanmin(most_freq_two_values)
 
-            change_points = []
+            probe_sync = []
+            counter_on = 0
+            probe_sync.append(0)
             for inxSync, itemSync in tqdm(enumerate(sync_data)):
                 if itemSync == high_val and sync_data[inxSync - 1] == low_val and np.sum(sync_data[(inxSync - jitter_samples):inxSync]) == low_val*jitter_samples and np.sum(sync_data[(inxSync + 1):(inxSync + jitter_samples + 1)]) == high_val*jitter_samples:
-                    change_points.append(inxSync)
-                elif itemSync == low_val and sync_data[inxSync - 1] == high_val and np.sum(sync_data[(inxSync - jitter_samples):inxSync]) == high_val*jitter_samples and np.sum(sync_data[(inxSync + 1):(inxSync + jitter_samples + 1)]) == low_val*jitter_samples:
-                    change_points.append(inxSync)
-
-            probe_sync = {}
-            counter_on = 1
-            counter_off = 1
-            probe_sync['Session start'] = 0
-            for indx, timestamp in enumerate(change_points):
-                if indx == 0:
-                    probe_sync['TTL input start'] = timestamp
-                elif indx != 0 and indx != (len(change_points) - 1) and indx % 2 != 0:
-                    probe_sync['{}LEDon'.format(counter_on)] = timestamp
+                    probe_sync.append(inxSync)
                     counter_on += 1
-                elif indx != 0 and indx != (len(change_points) - 1) and indx % 2 == 0:
-                    if ledoff:
-                        probe_sync['{}LEDoff'.format(counter_off)] = timestamp
-                        counter_off += 1
-                    else:
-                        continue
-                else:
-                    probe_sync['TTL input stop'] = timestamp
-            probe_sync['Session stop'] = len(sync_data)
+            probe_sync.append(len(sync_data))
 
             # delete the map object from memory
             del npx_recording
@@ -164,7 +160,7 @@ class EventReader:
 
             # save data to sync_dict where imec number is key
             sync_dict['imec{}'.format(anpxfile[anpxfile.find('imec') + len('imec')])] = probe_sync
-            print('There are {} total LED events in the imec{} file.'.format(len(probe_sync.keys()) - 4, anpxfile[anpxfile.find('imec') + len('imec')]))
+            print('There are {} total LED events in the imec{} file.'.format(counter_on, anpxfile[anpxfile.find('imec') + len('imec')]))
 
         # extract LED events from the tracking file
         if os.path.exists(track_file):
@@ -265,7 +261,6 @@ class EventReader:
 
             tracking_sync = {}
             tracking_on = 1
-            tracking_off = 1
             all_led_frames = []
 
             print('Looking for LED events in the interpolated tracking file.')
@@ -273,24 +268,15 @@ class EventReader:
             # give it a 2s break
             time.sleep(2)
 
-            tracking_sync['TTL input start'] = 0
             for row in tqdm(range(tracking_data.shape[0])):
-                if not tracking_data.iloc[row, columnofint:(columnofint + 9)].isnull().values.all() and tracking_data.iloc[row - 1, columnofint:(columnofint + 9)].isnull().values.all() and tracking_data.iloc[row: row + int(round(half_smooth_window / 2)) + 1, columnofint:(columnofint + 9)].isnull().all(axis=1).sum() == 0:
+                if row != 0 and not tracking_data.iloc[row, columnofint:(columnofint + 9)].isnull().values.all() and tracking_data.iloc[row - 1, columnofint:(columnofint + 9)].isnull().values.all() and tracking_data.iloc[row: row + int(round(half_smooth_window / 2)) + 1, columnofint:(columnofint + 9)].isnull().all(axis=1).sum() == 0:
                     tracking_sync['{}LEDon'.format(tracking_on)] = tracking_data.loc[row, 'Frame']
                     all_led_frames.append(tracking_data.loc[row, 'Frame'])
                     tracking_on += 1
-                elif tracking_data.iloc[row, columnofint:(columnofint + 9)].isnull().values.all() and not tracking_data.iloc[row - 1, columnofint:(columnofint + 9)].isnull().values.all() and tracking_data.iloc[row - int(round(half_smooth_window / 2)): row, columnofint:(columnofint + 9)].isnull().all(axis=1).sum() == 0:
-                    if ledoff:
-                        tracking_sync['{}LEDoff'.format(tracking_off)] = tracking_data.loc[row, 'Frame']
-                        all_led_frames.append(tracking_data.loc[row, 'Frame'])
-                        tracking_off += 1
-                    else:
-                        continue
-            tracking_sync['TTL input stop'] = tracking_data.iloc[-1, 0]
 
             # save data to sync_dict
             sync_dict['tracking'] = tracking_sync
-            print('Completed! There are {} total LED events in the tracking file.'.format(len(tracking_sync.keys()) - 2))
+            print('Completed! There are {} total LED events in the tracking file.'.format(len(tracking_sync.keys())))
 
             # save the tracking .csv with everything before the first LEDon and after the last LEDon removed
             with open('{}_interpolated.csv'.format(track_file[:-4]), 'r') as inp, open('{}final.csv'.format('{}_interpolated.csv'.format(track_file[:-4])[:-16]), 'w', newline='') as out:
@@ -307,34 +293,29 @@ class EventReader:
 
             print('Extracting sync data from the IMU file, please remain patient.')
 
+            # give it a 2s break
+            time.sleep(2)
+
             # load the files as df, add the imu header and get LED times
             imu_df = pd.read_csv('{}'.format(imu_file), sep=',', header=None)
             imu_df.columns = ['loop.starttime (ms)', 'sample.time (ms)', 'acc.x', 'acc.y', 'acc.z',  'linacc.x', 'linacc.y', 'linacc.z', 'gyr.x', 'gyr.y', 'gyr.z',
                               'mag.x', 'mag.y', 'mag.z', 'euler.x', 'euler.y', 'euler.z', 'LED', 'sound', 'sys.cal', 'gyr.cal', 'acc.cal', 'mag.cal']
 
-            sample_array = imu_df['sample.time (ms)'].tolist()
+            sample_array = imu_df.iloc[:, which_imu_time].tolist()
             led_array = imu_df['LED'].tolist()
-            teensy_time = {}
-            imu_led = {}
-            imu_on = 1
-            imu_off = 1
+            teensy_time = []
+            imu_led = []
+            imu_on = 0
             for indx, item in tqdm(enumerate(led_array)):
                 if item != 0 and led_array[indx - 1] == 0:
-                    imu_led['{}LEDon'.format(imu_on)] = indx
-                    teensy_time['{}LEDon'.format(imu_on)] = sample_array[indx]
+                    imu_led.append(indx)
+                    teensy_time.append(sample_array[indx])
                     imu_on += 1
-                elif item == 0 and led_array[indx - 1] != 0:
-                    if ledoff:
-                        imu_led['{}LEDoff'.format(imu_off)] = indx
-                        teensy_time['{}LEDoff'.format(imu_off)] = sample_array[indx]
-                        imu_off += 1
-                    else:
-                        continue
 
             # save data to sync_dict
             sync_dict['imu_frame_number'] = imu_led
             sync_dict['teensy_sample_time'] = teensy_time
-            print('Completed! here are {} total LED events in the IMU file.'.format(len(imu_led.keys())))
+            print('Completed! here are {} total LED events in the IMU file.'.format(imu_on))
 
             # save IMU data to file
             if type(imu_pkl) == str:
@@ -344,19 +325,97 @@ class EventReader:
         else:
             print('IMU file not given or found.')
 
-        # pack sync_dict into a df and save it to a .pkl file
-        choose_imec = 'imec{}'.format(ground_probe)
-        export_sync_df = pd.DataFrame(index=sync_dict[choose_imec].keys(), columns=sync_dict.keys())
-        for data_key in sync_dict.keys():
-            for event_key in sync_dict[choose_imec].keys():
-                if event_key in sync_dict[data_key].keys():
-                    export_sync_df.loc[event_key, data_key] = sync_dict[data_key][event_key]
+        # align LED events from the tracking data stream to other data streams
+        if os.path.exists(track_file):
 
-        # check if dataframe contains NANs
-        if export_sync_df.iloc[2:-2, :].isnull().values.any():
-            print('There is at least one NAN value as a LED event in the saved sync_df! Check it out!')
+            for data_key in sync_dict.keys():
+                if 'imec' in data_key:
+                    print('Template matching tracking to {} LED events.'.format(data_key))
 
-        with open('{}'.format(self.sync_df), 'wb') as df:
-            pickle.dump(export_sync_df, df)
+                    first_diffs = np.diff(list(sync_dict['tracking'].values())[:sync_sequence]) * (npx_sampling_rate / frame_rate)
+                    last_diffs = np.diff(list(sync_dict['tracking'].values())[-sync_sequence:]) * (npx_sampling_rate / frame_rate)
+
+                    imec_leds = sync_dict[data_key][1:-1]
+                    important_led_positions = []
+
+                    for indx, item in enumerate(imec_leds):
+                        if indx < len(imec_leds) - sync_sequence:
+                            temp_diffs = np.diff(imec_leds[indx:indx+sync_sequence])
+                            if (np.absolute(temp_diffs - first_diffs) <= 30*sample_error).all():
+                                print('Found first matching LED at sample number {}.'.format(item))
+                                important_led_positions.append(indx)
+                            elif (np.absolute(temp_diffs - last_diffs) <= 30*sample_error).all():
+                                print('Found last matching LED at sample number {}.'.format(imec_leds[indx + sync_sequence - 1]))
+                                important_led_positions.append(indx + sync_sequence - 1)
+                                break
+
+                    if important_led_positions[0] == important_led_positions[-1]:
+                        print('At least one matching LED not found, check it out!')
+                        sys.exit()
+
+                    imec_leds = imec_leds[important_led_positions[0]:important_led_positions[-1] + 1]
+                    print('After template matching, there are now {} LED events in the {} file.'.format(len(imec_leds), data_key))
+
+                    imec_dict = {}
+                    counter_on = 1
+                    imec_dict['Session start'] = 0
+                    for led_event in imec_leds:
+                        imec_dict['{}LEDon'.format(counter_on)] = led_event
+                        counter_on += 1
+                    imec_dict['Session stop'] = sync_dict[data_key][-1]
+                    sync_dict[data_key] = imec_dict
+
+                elif 'teensy' in data_key:
+                    print('Template matching tracking to {} LED events.'.format(data_key))
+
+                    first_diffs = np.diff(list(sync_dict['tracking'].values())[:sync_sequence]) * (1e3 / frame_rate)
+                    last_diffs = np.diff(list(sync_dict['tracking'].values())[-sync_sequence:]) * (1e3 / frame_rate)
+
+                    imu_leds = sync_dict[data_key]
+                    important_led_positions = []
+
+                    for indx, item in enumerate(imu_leds):
+                        if indx < len(imu_leds) - sync_sequence:
+                            temp_diffs = np.diff(imu_leds[indx:indx+sync_sequence])
+                            if (np.absolute(temp_diffs - first_diffs) <= sample_error).all():
+                                print('Found first matching LED at sample time {}.'.format(item))
+                                important_led_positions.append(indx)
+                            elif (np.absolute(temp_diffs - last_diffs) <= sample_error).all():
+                                print('Found last matching LED at sample time {}.'.format(imu_leds[indx + sync_sequence - 1]))
+                                important_led_positions.append(indx + sync_sequence - 1)
+                                break
+
+                    if important_led_positions[0] == important_led_positions[-1]:
+                        print('At least one matching LED not found, check it out!')
+                        sys.exit()
+
+                    imu_leds = imu_leds[important_led_positions[0]:important_led_positions[-1] + 1]
+                    imu_frame_numbers = sync_dict['imu_frame_number'][important_led_positions[0]:important_led_positions[-1] + 1]
+                    print('After template matching, there are now {} LED events in the {} file.'.format(len(imu_leds), data_key))
+
+                    teensy_dict = {}
+                    imu_frame_dict = {}
+                    counter_on = 1
+                    for indx, led_event in enumerate(imu_leds):
+                        teensy_dict['{}LEDon'.format(counter_on)] = led_event
+                        imu_frame_dict['{}LEDon'.format(counter_on)] = imu_frame_numbers[indx]
+                        counter_on += 1
+                    sync_dict['imu_frame_number'] = imu_frame_dict
+                    sync_dict['teensy_sample_time'] = teensy_dict
+
+            # pack sync_dict into a df and save it to a .pkl file
+            choose_imec = 'imec{}'.format(ground_probe)
+            export_sync_df = pd.DataFrame(index=sync_dict[choose_imec].keys(), columns=sync_dict.keys())
+            for data_key in sync_dict.keys():
+                for event_key in sync_dict[choose_imec].keys():
+                    if event_key in sync_dict[data_key].keys():
+                        export_sync_df.loc[event_key, data_key] = sync_dict[data_key][event_key]
+
+            # check if dataframe contains NANs
+            if export_sync_df.iloc[1:-1, :].isnull().values.any():
+                print('There is at least one NAN value as a LED event in the saved sync_df! Check it out!')
+
+            with open('{}'.format(self.sync_df), 'wb') as df:
+                pickle.dump(export_sync_df, df)
 
         print('Extraction complete! It took {:.2f} minutes.'.format((time.time() - t) / 60))

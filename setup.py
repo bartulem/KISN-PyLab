@@ -9,7 +9,7 @@ def read(fname):
 
 setup(
     name="kisn_pylab",
-    version="2.0.0",
+    version="3.0.0",
     author="bartulem",
     author_email="mimica.bartul@gmail.com",
     description=("For running e-phys/3D tracking experiments"),

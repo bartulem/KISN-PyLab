@@ -19,6 +19,7 @@ import pandas as pd
 import numpy as np
 import os
 import sys
+import time
 import scipy.io as sio
 import pickle
 from kisn_pylab import regress
@@ -115,7 +116,8 @@ class ExtractSpikes:
             # keep info about the directory
             spike_dict[dir_key]['dir'] = one_dir
 
-        print('Splitting clusters to individual sessions, please be patient.')
+        t = time.time()
+        print('Splitting clusters to individual sessions, please be patient - this could take awhile (depending on the number of clusters).')
 
         # check if one or more sessions require splitting
         if not one_session:
@@ -164,7 +166,7 @@ class ExtractSpikes:
                                         full_session_df = pickle.load(sync_pkl)
 
                                     # separate the imec part of the dataframe
-                                    reduced_session_df = full_session_df.iloc[2:-2, :2]
+                                    reduced_session_df = full_session_df.iloc[1:-1, :2]
 
                                     # regress
                                     regress_session_class = regress.LinRegression(reduced_session_df)
@@ -266,7 +268,7 @@ class ExtractSpikes:
                                 full_session_df = pickle.load(sync_pkl)
 
                             # separate the imec part of the dataframe
-                            reduced_session_df = full_session_df.iloc[2:-2, :2]
+                            reduced_session_df = full_session_df.iloc[1:-1, :2]
 
                             # regress
                             regress_session_class = regress.LinRegression(reduced_session_df)
@@ -274,7 +276,7 @@ class ExtractSpikes:
 
                             # prepare arrays for plotting and check if the transformation is acceptable
                             y_session_test = regression_session_dict['y_test']
-                            y_session_test_predictions = np.array([int(round(sample) for sample in regression_session_dict['y_test_predictions'])])
+                            y_session_test_predictions = np.array([int(round(sample)) for sample in regression_session_dict['y_test_predictions']])
                             true_predicted_differences = (y_session_test - y_session_test_predictions) / (npx_sampling_rate / 1e3)
                             print('The differences between imec test and imec test predictions are: median {:.2f} ms, mean {:.2f} ms, max {:.2f} ms.'.format(np.abs(np.nanmedian(true_predicted_differences)), np.abs(np.nanmean(true_predicted_differences)), np.nanmax(np.abs(true_predicted_differences))))
 
@@ -310,4 +312,4 @@ class ExtractSpikes:
                         cell_count += 1
 
                 print('In this session, on imec{} there are {} good clusters (above {} spikes).'.format(probe_id, cell_count, min_spikes))
-                print('Processing complete!')
+                print('Processing complete! It took {:.2f} minutes.'.format((time.time() - t) / 60))

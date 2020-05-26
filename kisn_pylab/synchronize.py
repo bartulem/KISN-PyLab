@@ -44,6 +44,8 @@ class Sync:
             In a multi probe setting, the probe other probes are synced to; defaults to 0.
         imu_files : list
             The list of absolute paths to imu_pkl files that contain the raw IMU data; defaults to 0.
+        which_imu_time : int/float
+            The IMU time to be used in the analyses, loop.starttime (0) or sample.time (1); defaults to 1.
         ----------
         """
 
@@ -54,6 +56,7 @@ class Sync:
         npx_sampling_rate = float([kwargs['npx_sampling_rate'] if 'npx_sampling_rate' in kwargs.keys() else 3e4][0])
         ground_probe = int([kwargs['ground_probe'] if 'ground_probe' in kwargs.keys() else 0][0])
         imu_files = [kwargs['imu_files'] if 'imu_files' in kwargs.keys() and type(kwargs['imu_files']) == list else 0][0]
+        which_imu_time = int([kwargs['which_imu_time'] if 'which_imu_time' in kwargs.keys() and (type(kwargs['which_imu_time']) == int or type(kwargs['which_imu_time']) == float) else 1][0])
 
         # save the sync and IMU data in a dictionary where file names are keys
         sync_data = {}
@@ -71,7 +74,7 @@ class Sync:
                         with open(imu_files[fileind], 'rb') as imu_file:
                             temp_file = pickle.load(imu_file)
 
-                        sample_array = temp_file['sample.time (ms)'].tolist()
+                        sample_array = temp_file.iloc[:, which_imu_time].tolist()
 
                         diffs = np.zeros(len(sample_array) - 1)
                         for ind, item in enumerate(sample_array):
@@ -114,14 +117,12 @@ class Sync:
                     # reduce the dataframe to only include LED occurrences
                     imec_data_col = temp_df.columns.tolist().index(imec_data)
                     data_stream_col = temp_df.columns.tolist().index(data_stream)
-                    reduced_df = temp_df.iloc[2:-2, [imec_data_col, data_stream_col]]
-                    extra_data = 0
+                    reduced_df = temp_df.iloc[1:-1, [imec_data_col, data_stream_col]]
 
                     # transform data for imec (to seconds) regardless of the data stream (tracking/imu) and add extra_data to be predicted if necessary
                     if data_stream == 'tracking':
                         # convert imec sample numbers into seconds
                         reduced_df.iloc[:, 0] = reduced_df.iloc[:, 0] / npx_sampling_rate
-                        extra_data = np.ravel(temp_df.loc['TTL input start', 'tracking'])
                     else:
                         # convert imec sample and teensy clock numbers into seconds
                         reduced_df.iloc[:, 0] = reduced_df.iloc[:, 0] / npx_sampling_rate
@@ -129,7 +130,7 @@ class Sync:
 
                     # regress
                     regress_class = regress.LinRegression(reduced_df)
-                    data_stream_dict[imec_data] = regress_class.split_train_test_and_regress(xy_order=[1, 0], extra_data=extra_data)
+                    data_stream_dict[imec_data] = regress_class.split_train_test_and_regress(xy_order=[1, 0])
 
                 # print relevant information and save empirical frame rate in the last column of .pkl file
                 differences_dict = {}
@@ -138,14 +139,15 @@ class Sync:
                     for imec_data in imec_data_cols:
 
                         print('For imec probe {} sample time predicted by the Motive frames:'.format(int(imec_data[-1])))
+
                         true_predicted_differences = (data_stream_dict[imec_data]['y_test'] - data_stream_dict[imec_data]['y_test_predictions'])*1e3
                         differences_dict[imec_data] = true_predicted_differences
 
-                        print('The offset between the predicted start of tracking and the TTL start tracking pulse is {:.2f} ms.'.format(np.abs((temp_df.loc['TTL input start', imec_data] / (npx_sampling_rate/1e3)) - (data_stream_dict[imec_data]['extra_data_predictions'][0]*1e3))))
                         print('The differences between NPX test and NPX test predictions are: median {:.2f} ms, mean {:.2f} ms, max {:.2f} ms.'.format(np.abs(np.nanmedian(true_predicted_differences)), np.abs(np.nanmean(true_predicted_differences)), np.nanmax(np.abs(true_predicted_differences))))
 
                         emp_fr_rate = round(1/data_stream_dict[imec_data]['slope'], 5)
                         empirical_frame_rates.append(emp_fr_rate)
+
                         print('The estimated empirical frame rate is {:.5f}.'.format(emp_fr_rate))
 
                     # re-save .pkl file with new frame rate

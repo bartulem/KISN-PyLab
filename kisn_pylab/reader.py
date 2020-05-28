@@ -76,7 +76,7 @@ class EventReader:
         sync_sequence : int/float
             The length of the sequence the LED events should be matched across data streams; defaults to 10.
         sample_error : int/float
-            The time the presumed IMEC LEDs could be allowed to err around; defaults to 15 (ms).
+            The time the presumed IMEC LEDs could be allowed to err around; defaults to 20 (ms).
         which_imu_time : int/float
             The IMU time to be used in the analyses, loop.starttime (0) or sample.time (1); defaults to 1.
         ----------
@@ -93,7 +93,7 @@ class EventReader:
         frame_rate = float([kwargs['frame_rate'] if 'frame_rate' in kwargs.keys() else 120.][0])
         npx_sampling_rate = int([kwargs['npx_sampling_rate'] if 'npx_sampling_rate' in kwargs.keys() else 3e4][0])
         sync_sequence = int([kwargs['sync_sequence'] if 'sync_sequence' in kwargs.keys() else 10][0])
-        sample_error = int([kwargs['sample_error'] if 'sample_error' in kwargs.keys() and (type(kwargs['sample_error']) == int or type(kwargs['sample_error']) == float) else 15][0])
+        sample_error = int([kwargs['sample_error'] if 'sample_error' in kwargs.keys() and (type(kwargs['sample_error']) == int or type(kwargs['sample_error']) == float) else 20][0])
         which_imu_time = int([kwargs['which_imu_time'] if 'which_imu_time' in kwargs.keys() and (type(kwargs['which_imu_time']) == int or type(kwargs['which_imu_time']) == float) else 1][0])
 
         # check that the NPX files are there
@@ -296,11 +296,17 @@ class EventReader:
             # give it a 2s break
             time.sleep(2)
 
-            # load the files as df, add the imu header and get LED times
+            # load the files as df
             imu_df = pd.read_csv('{}'.format(imu_file), sep=',', header=None)
+
+            # get rid of the date in the first column (loop.starttime)
+            imu_df.iloc[:, 0] = [np.int64(x.split('\t')[1]) for x in imu_df.iloc[:, 0]]
+
+            # add the imu header
             imu_df.columns = ['loop.starttime (ms)', 'sample.time (ms)', 'acc.x', 'acc.y', 'acc.z',  'linacc.x', 'linacc.y', 'linacc.z', 'gyr.x', 'gyr.y', 'gyr.z',
                               'mag.x', 'mag.y', 'mag.z', 'euler.x', 'euler.y', 'euler.z', 'LED', 'sound', 'sys.cal', 'gyr.cal', 'acc.cal', 'mag.cal']
 
+            # get LED times
             sample_array = imu_df.iloc[:, which_imu_time].tolist()
             led_array = imu_df['LED'].tolist()
             teensy_time = []

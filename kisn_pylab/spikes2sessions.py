@@ -110,14 +110,15 @@ class ExtractSpikes:
             spike_dict[dir_key]['spike_times'] = np.load('{}{}spike_times.npy'.format(one_dir, os.sep))
 
             # load the .pkl file with total file lengths
-            with open(pkl_lengths[dirind], 'rb') as pkl_len:
-                spike_dict[dir_key]['file_lengths'] = pickle.load(pkl_len)
+            if pkl_lengths != 0:
+                with open(pkl_lengths[dirind], 'rb') as pkl_len:
+                    spike_dict[dir_key]['file_lengths'] = pickle.load(pkl_len)
 
             # keep info about the directory
             spike_dict[dir_key]['dir'] = one_dir
 
         t = time.time()
-        print('Splitting clusters to individual sessions, please be patient - this could take awhile (depending on the number of clusters).')
+        print('Splitting clusters to individual sessions, please be patient - this could take awhile (depending on the number of sessions/clusters).')
 
         # check if one or more sessions require splitting
         if not one_session:
@@ -232,7 +233,6 @@ class ExtractSpikes:
                         omni_present += 1
 
                 print('On imec{}, {} cells were present in all sessions'.format(probe_id, omni_present))
-                print('Processing complete!')
 
         else:
 
@@ -298,7 +298,7 @@ class ExtractSpikes:
                                 if aspike > 0:
                                     spikes.append(int(round(aspike)) / npx_sampling_rate)
 
-                        probe_spike_data['imec{}_cell{:03d}_ch{:03dg}'.format(probe_id, cluster_info.loc[indx, 'id'], cluster_info.loc[indx, 'ch'])] = spikes
+                        probe_spike_data['imec{}_cell{:03d}_ch{:03d}'.format(probe_id, cluster_info.loc[indx, 'id'], cluster_info.loc[indx, 'ch'])] = spikes
 
                 # save spike .mat files (only if there's more than *min_spikes* spk/session!)
                 path = '{}{}imec{}_session1'.format(spike_dict[probe]['dir'], os.sep, probe_id)
@@ -312,4 +312,5 @@ class ExtractSpikes:
                         cell_count += 1
 
                 print('In this session, on imec{} there are {} good clusters (above {} spikes).'.format(probe_id, cell_count, min_spikes))
-                print('Processing complete! It took {:.2f} minutes.'.format((time.time() - t) / 60))
+
+        print('Processing complete! It took {:.2f} minute(s).'.format((time.time() - t) / 60))

@@ -111,9 +111,14 @@ class Concat:
             del npx_recording
             gc.collect()
 
-        if not cmd_prompt:
+        # save the file_lengths dictionary
+        with open('{}'.format(self.pkl_len), 'wb') as save_dict:
+            pickle.dump(file_lengths, save_dict)
 
-            t = time.time()
+        print('Concatenating files, please be patient - this could take >1 hour.')
+        t = time.time()
+
+        if not cmd_prompt:
 
             # create new empty binary file & memory map array to load data into
             with open(self.new_file_name, 'wb'):
@@ -121,12 +126,13 @@ class Concat:
 
             new_array_total_len = sum([file_lengths[akey] for akey in file_lengths.keys() if akey != 'total_len_changepoints'])
             concatenated_file = np.memmap(self.new_file_name, dtype=np.int16, mode='r+', shape=(new_array_total_len,), order='C')
+
             print('The concatenated file has total length of {}, or {} samples, or {} minutes.'.format(concatenated_file.shape[0], concatenated_file.shape[0] // nchan, round(concatenated_file.shape[0] // nchan / (npx_sampling_rate*60), 2)))
 
-            # fill it with data
-            print('Concatenating files, please be patient - this could take >1 hour.')
+            # give it a 1s break
             time.sleep(1)
 
+            # fill it with data
             counter = 0
             for onefile in tqdm(file_paths):
                 npx_recording = np.memmap(onefile, mode='r', dtype=np.int16, order='C')
@@ -145,11 +151,9 @@ class Concat:
             del concatenated_file
             gc.collect()
 
-            print('Concatenation complete! It took {:.2f} minutes.'.format((time.time() - t) / 60))
-
         else:
 
-            print('Concatenating files, please be patient - this could take >1 hour.')
+            # give it a 1s break
             time.sleep(1)
 
             # get all files in a command
@@ -161,11 +165,7 @@ class Concat:
                     command += '{} '.format(afile)
             command += '"{}"'.format(self.new_file_name)
 
-            # outsource command and keep time
-            t = time.time()
+            # outsource command
             os.system('cmd /c "{}"'.format(command))
-            print('Concatenation complete! It took {:.2f} minutes.'.format((time.time() - t) / 60))
 
-        # save the file_lengths dictionary
-        with open('{}'.format(self.pkl_len), 'wb') as save_dict:
-            pickle.dump(file_lengths, save_dict)
+        print('Concatenation complete! It took {:.2f} minutes.'.format((time.time() - t) / 60))

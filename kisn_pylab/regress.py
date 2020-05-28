@@ -42,12 +42,12 @@ class LinRegression:
         xy_order = [kwargs['xy_order'] if 'xy_order' in kwargs.keys() and type(kwargs['xy_order']) == list and len(kwargs['xy_order']) == 2 else [0, 1]][0]
         extra_data = [kwargs['extra_data'] if 'extra_data' in kwargs.keys() else 0][0]
 
-        split_df = {'x_train': [], 'x_test': [], 'y_train': [], 'y_test': []}
-
         # check if the input dataframe has nans, and if so - eliminate those rows
         if self.input_data.isnull().values.any():
             print('{} row(s) has/have NAN values and will be removed.'.format(self.input_data.isnull().any(axis=1).sum()))
             self.input_data = pd.DataFrame.dropna(self.input_data)
+
+        split_df = {'x_train': [], 'x_test': [], 'y_train': [], 'y_test': []}
 
         # even indices are test, odd indices are train data
         for indx in range(self.input_data.shape[0]):

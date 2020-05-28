@@ -76,7 +76,7 @@ class EventReader:
         sync_sequence : int/float
             The length of the sequence the LED events should be matched across data streams; defaults to 10.
         sample_error : int/float
-            The time the presumed IMEC LEDs could be allowed to err around; defaults to 20 (ms).
+            The time the presumed IMEC/IMU LEDs could be allowed to err around; defaults to 20 (ms).
         which_imu_time : int/float
             The IMU time to be used in the analyses, loop.starttime (0) or sample.time (1); defaults to 1.
         ----------
@@ -186,13 +186,14 @@ class EventReader:
             led_cols = list(range(columnofint, columnofint+9))
             original_tracking_data = pd.read_csv(track_file, sep=',', skiprows=6)
 
-            print('Correcting fully empty frames and jitter-empty LED frames.')
+            print('Correcting fully empty frames.')
 
             # give it a 2s break
             time.sleep(2)
 
             for i in tqdm(range(original_tracking_data.shape[0])):
                 if i < (original_tracking_data.shape[0] - 1) and original_tracking_data.iloc[i, 2:].isnull().values.all():
+                    print('Frame {} is fully empty.'.format(original_tracking_data.iloc[i, 0]))
                     changed_array = np.zeros(original_tracking_data.shape[1])
                     for inx in range(len(changed_array)):
                         if inx < 2:
@@ -209,30 +210,6 @@ class EventReader:
                             else:
                                 smoothed_val = round(convolve(original_tracking_data.iloc[i-half_smooth_window:i+half_smooth_window+1, inx], kernel=Gaussian1DKernel(stddev=1), nan_treatment='interpolate', preserve_nan=False)[half_smooth_window], 6)
                                 changed_array[inx] = smoothed_val
-
-                    # format strings accordingly
-                    changed_list = []
-                    for indx, item in enumerate(changed_array):
-                        if indx == 0:
-                            changed_list.append(str(int(item)))
-                        else:
-                            if not np.isnan(item):
-                                changed_list.append('{:.6f}'.format(item))
-                            else:
-                                changed_list.append('')
-                    corrected_frames[i + 7] = changed_list
-
-                elif i < (original_tracking_data.shape[0] - 1) and not original_tracking_data.iloc[i, 2:].isnull().values.all() and original_tracking_data.iloc[i, columnofint:columnofint+9].isnull().values.all() and original_tracking_data.iloc[i-half_smooth_window:i, columnofint:columnofint+9].isnull().all(axis=1).sum() == 0 and original_tracking_data.iloc[i:i+half_smooth_window+1, columnofint:columnofint+9].isnull().all(axis=1).sum() == 0:
-                    changed_array = np.zeros(original_tracking_data.shape[1])
-                    for inx in range(len(changed_array)):
-                        if inx not in led_cols:
-                            if inx < 1:
-                                changed_array[inx] = original_tracking_data.iloc[i, inx]
-                            else:
-                                changed_array[inx] = round(original_tracking_data.iloc[i, inx], 6)
-                        else:
-                            smoothed_val = round(convolve(original_tracking_data.iloc[i-half_smooth_window:i+half_smooth_window+1, inx], kernel=Gaussian1DKernel(stddev=1), nan_treatment='interpolate', preserve_nan=False)[half_smooth_window], 6)
-                            changed_array[inx] = smoothed_val
 
                     # format strings accordingly
                     changed_list = []
@@ -269,7 +246,7 @@ class EventReader:
             time.sleep(2)
 
             for row in tqdm(range(tracking_data.shape[0])):
-                if row != 0 and not tracking_data.iloc[row, columnofint:(columnofint + 9)].isnull().values.all() and tracking_data.iloc[row - 1, columnofint:(columnofint + 9)].isnull().values.all() and tracking_data.iloc[row: row + int(round(half_smooth_window / 2)) + 1, columnofint:(columnofint + 9)].isnull().all(axis=1).sum() == 0:
+                if row != 0 and not tracking_data.iloc[row, columnofint:(columnofint + 9)].isnull().values.all() and tracking_data.iloc[row - half_smooth_window:row, columnofint:(columnofint + 9)].isnull().values.all() and tracking_data.iloc[row:row + half_smooth_window, columnofint:(columnofint + 9)].isnull().all(axis=1).sum() == 0:
                     tracking_sync['{}LEDon'.format(tracking_on)] = tracking_data.loc[row, 'Frame']
                     all_led_frames.append(tracking_data.loc[row, 'Frame'])
                     tracking_on += 1

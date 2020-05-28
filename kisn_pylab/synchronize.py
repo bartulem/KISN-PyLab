@@ -108,13 +108,20 @@ class Sync:
                 elif 'tracking' in data_stream or 'teensy' in data_stream:
                     other_data_cols.append(data_stream)
 
+            if len(imec_data_cols) == 0:
+                print('There are no IMEC LED events in this dataset.')
+                sys.exit()
+            elif len(other_data_cols) == 0:
+                print('There are no data streams other than IMEC in this dataset.')
+                sys.exit()
+
             for data_stream in other_data_cols:
 
                 data_stream_dict = {}
 
                 for imec_data in imec_data_cols:
 
-                    # reduce the dataframe to only include LED occurrences
+                    # reduce the dataframe to only include LED occurrences of appropriate data streams
                     imec_data_col = temp_df.columns.tolist().index(imec_data)
                     data_stream_col = temp_df.columns.tolist().index(data_stream)
                     reduced_df = temp_df.iloc[1:-1, [imec_data_col, data_stream_col]]

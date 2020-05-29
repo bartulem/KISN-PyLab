@@ -246,7 +246,7 @@ class EventReader:
             time.sleep(2)
 
             for row in tqdm(range(tracking_data.shape[0])):
-                if row != 0 and not tracking_data.iloc[row, columnofint:(columnofint + 9)].isnull().values.all() and tracking_data.iloc[row - half_smooth_window:row, columnofint:(columnofint + 9)].isnull().values.all() and tracking_data.iloc[row:row + half_smooth_window, columnofint:(columnofint + 9)].isnull().all(axis=1).sum() == 0:
+                if row != 0 and not tracking_data.iloc[row, columnofint:(columnofint + 9)].isnull().values.all() and tracking_data.iloc[row - half_smooth_window:row, columnofint:(columnofint + 9)].isnull().values.all() and tracking_data.iloc[row:row + half_smooth_window + 1, columnofint:(columnofint + 9)].isnull().all(axis=1).sum() == 0:
                     tracking_sync['{}LEDon'.format(tracking_on)] = tracking_data.loc[row, 'Frame']
                     all_led_frames.append(tracking_data.loc[row, 'Frame'])
                     tracking_on += 1

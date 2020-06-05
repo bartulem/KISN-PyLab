@@ -36,8 +36,13 @@ import pandas as pd
 import pickle
 from astropy.convolution import convolve
 from astropy.convolution import Gaussian1DKernel
+from astropy.utils.exceptions import AstropyWarning
 from collections import Counter
 import operator
+import warnings
+
+
+warnings.simplefilter('ignore', category=AstropyWarning)
 
 
 class EventReader:
@@ -139,7 +144,8 @@ class EventReader:
 
             session_proportion = (counter[0][1] + counter[1][1]) / len(sync_data)
             if session_proportion < .99:
-                print('The two most dominant values, {} and {} appear together only {:.3f} of the total session, so something is wrong. Check it out!'.format(counter[0][0], counter[1][0], session_proportion))
+                print('The two most dominant values, {} and {} appear together only {:.3f} of the total session, '
+                      'so something is wrong. Check it out!'.format(counter[0][0], counter[1][0], session_proportion))
                 sys.exit()
 
             high_val = np.nanmax(most_freq_two_values)
@@ -149,7 +155,10 @@ class EventReader:
             counter_on = 0
             probe_sync.append(0)
             for inxSync, itemSync in tqdm(enumerate(sync_data)):
-                if itemSync == high_val and sync_data[inxSync - 1] == low_val and np.sum(sync_data[(inxSync - jitter_samples):inxSync]) == low_val*jitter_samples and np.sum(sync_data[(inxSync + 1):(inxSync + jitter_samples + 1)]) == high_val*jitter_samples:
+                if jitter_samples < inxSync < (len(sync_data) - 1 - jitter_samples) \
+                        and itemSync == high_val and sync_data[inxSync - 1] == low_val \
+                        and np.sum(sync_data[(inxSync - jitter_samples):inxSync]) == low_val*jitter_samples \
+                        and np.sum(sync_data[(inxSync + 1):(inxSync + jitter_samples + 1)]) == high_val*jitter_samples:
                     probe_sync.append(inxSync)
                     counter_on += 1
             probe_sync.append(len(sync_data))
@@ -193,7 +202,7 @@ class EventReader:
 
             for i in tqdm(range(original_tracking_data.shape[0])):
                 if i < (original_tracking_data.shape[0] - 1) and original_tracking_data.iloc[i, 2:].isnull().values.all():
-                    print('Frame {} is fully empty.'.format(original_tracking_data.iloc[i, 0]))
+                    # print('Frame {} is fully empty.'.format(original_tracking_data.iloc[i, 0]))
                     changed_array = np.zeros(original_tracking_data.shape[1])
                     for inx in range(len(changed_array)):
                         if inx < 2:
@@ -202,13 +211,16 @@ class EventReader:
                             else:
                                 changed_array[inx] = round(original_tracking_data.iloc[i, inx], 6)
                         elif 1 < inx and inx not in led_cols:
-                            smoothed_val = round(convolve(original_tracking_data.iloc[i-half_smooth_window:i+half_smooth_window+1, inx], kernel=Gaussian1DKernel(stddev=1), nan_treatment='interpolate', preserve_nan=False)[half_smooth_window], 6)
+                            smoothed_val = round(convolve(original_tracking_data.iloc[i-half_smooth_window:i+half_smooth_window+1, inx],
+                                                          kernel=Gaussian1DKernel(stddev=1), nan_treatment='interpolate', preserve_nan=False)[half_smooth_window], 6)
                             changed_array[inx] = smoothed_val
                         else:
-                            if (np.isnan(original_tracking_data.iloc[i-half_smooth_window:i, inx]).all() and not np.isnan(original_tracking_data.iloc[i+1:i+half_smooth_window+1, inx]).all()) or (not np.isnan(original_tracking_data.iloc[i-half_smooth_window:i, inx]).all() and np.isnan(original_tracking_data.iloc[i+1:i+half_smooth_window+1, inx]).all()):
+                            if (np.isnan(original_tracking_data.iloc[i-half_smooth_window:i, inx]).all() and not np.isnan(original_tracking_data.iloc[i+1:i+half_smooth_window+1, inx]).all()) \
+                                    or (not np.isnan(original_tracking_data.iloc[i-half_smooth_window:i, inx]).all() and np.isnan(original_tracking_data.iloc[i+1:i+half_smooth_window+1, inx]).all()):
                                 changed_array[inx] = np.nan
                             else:
-                                smoothed_val = round(convolve(original_tracking_data.iloc[i-half_smooth_window:i+half_smooth_window+1, inx], kernel=Gaussian1DKernel(stddev=1), nan_treatment='interpolate', preserve_nan=False)[half_smooth_window], 6)
+                                smoothed_val = round(convolve(original_tracking_data.iloc[i-half_smooth_window:i+half_smooth_window+1, inx],
+                                                              kernel=Gaussian1DKernel(stddev=1), nan_treatment='interpolate', preserve_nan=False)[half_smooth_window], 6)
                                 changed_array[inx] = smoothed_val
 
                     # format strings accordingly
@@ -246,7 +258,9 @@ class EventReader:
             time.sleep(2)
 
             for row in tqdm(range(tracking_data.shape[0])):
-                if row != 0 and not tracking_data.iloc[row, columnofint:(columnofint + 9)].isnull().values.all() and tracking_data.iloc[row - half_smooth_window:row, columnofint:(columnofint + 9)].isnull().values.all() and tracking_data.iloc[row:row + half_smooth_window + 1, columnofint:(columnofint + 9)].isnull().all(axis=1).sum() == 0:
+                if row > 0 and not tracking_data.iloc[row, columnofint:(columnofint + 9)].isnull().values.all() \
+                        and tracking_data.iloc[max(row - half_smooth_window, 0):row, columnofint:(columnofint + 9)].isnull().values.all() \
+                        and tracking_data.iloc[row:min(row + half_smooth_window + 1, tracking_data.shape[0]), columnofint:(columnofint + 9)].isnull().all(axis=1).sum() == 0:
                     tracking_sync['{}LEDon'.format(tracking_on)] = tracking_data.loc[row, 'Frame']
                     all_led_frames.append(tracking_data.loc[row, 'Frame'])
                     tracking_on += 1
@@ -280,8 +294,10 @@ class EventReader:
             imu_df.iloc[:, 0] = [np.int64(x.split('\t')[1]) for x in imu_df.iloc[:, 0]]
 
             # add the imu header
-            imu_df.columns = ['loop.starttime (ms)', 'sample.time (ms)', 'acc.x', 'acc.y', 'acc.z',  'linacc.x', 'linacc.y', 'linacc.z', 'gyr.x', 'gyr.y', 'gyr.z',
-                              'mag.x', 'mag.y', 'mag.z', 'euler.x', 'euler.y', 'euler.z', 'LED', 'sound', 'sys.cal', 'gyr.cal', 'acc.cal', 'mag.cal']
+            imu_df.columns = ['loop.starttime (ms)', 'sample.time (ms)', 'acc.x', 'acc.y', 'acc.z',
+                              'linacc.x', 'linacc.y', 'linacc.z', 'gyr.x', 'gyr.y', 'gyr.z',
+                              'mag.x', 'mag.y', 'mag.z', 'euler.x', 'euler.y', 'euler.z',
+                              'LED', 'sound', 'sys.cal', 'gyr.cal', 'acc.cal', 'mag.cal']
 
             # get LED times
             sample_array = imu_df.iloc[:, which_imu_time].tolist()
@@ -290,7 +306,7 @@ class EventReader:
             imu_led = []
             imu_on = 0
             for indx, item in tqdm(enumerate(led_array)):
-                if item != 0 and led_array[indx - 1] == 0:
+                if indx > 0 and item != 0 and led_array[indx - 1] == 0:
                     imu_led.append(indx)
                     teensy_time.append(sample_array[indx])
                     imu_on += 1
@@ -315,15 +331,15 @@ class EventReader:
                 if 'imec' in data_key:
                     print('Template matching tracking to {} LED events.'.format(data_key))
 
-                    first_diffs = np.diff(list(sync_dict['tracking'].values())[:sync_sequence]) * (npx_sampling_rate / frame_rate)
-                    last_diffs = np.diff(list(sync_dict['tracking'].values())[-sync_sequence:]) * (npx_sampling_rate / frame_rate)
+                    first_diffs = (np.diff(list(sync_dict['tracking'].values())[:sync_sequence]) + 1) * (npx_sampling_rate / frame_rate)
+                    last_diffs = (np.diff(list(sync_dict['tracking'].values())[-sync_sequence:]) + 1) * (npx_sampling_rate / frame_rate)
 
                     imec_leds = sync_dict[data_key][1:-1]
                     important_led_positions = []
 
                     for indx, item in enumerate(imec_leds):
                         if indx < len(imec_leds) - sync_sequence:
-                            temp_diffs = np.diff(imec_leds[indx:indx+sync_sequence])
+                            temp_diffs = (np.diff(imec_leds[indx:indx+sync_sequence]) + 1)
                             if (np.absolute(temp_diffs - first_diffs) <= 30*sample_error).all():
                                 print('Found first matching LED at sample number {}.'.format(item))
                                 important_led_positions.append(indx)
@@ -351,15 +367,15 @@ class EventReader:
                 elif 'teensy' in data_key:
                     print('Template matching tracking to {} LED events.'.format(data_key))
 
-                    first_diffs = np.diff(list(sync_dict['tracking'].values())[:sync_sequence]) * (1e3 / frame_rate)
-                    last_diffs = np.diff(list(sync_dict['tracking'].values())[-sync_sequence:]) * (1e3 / frame_rate)
+                    first_diffs = (np.diff(list(sync_dict['tracking'].values())[:sync_sequence]) + 1) * (1e3 / frame_rate)
+                    last_diffs = (np.diff(list(sync_dict['tracking'].values())[-sync_sequence:]) + 1) * (1e3 / frame_rate)
 
                     imu_leds = sync_dict[data_key]
                     important_led_positions = []
 
                     for indx, item in enumerate(imu_leds):
                         if indx < len(imu_leds) - sync_sequence:
-                            temp_diffs = np.diff(imu_leds[indx:indx+sync_sequence])
+                            temp_diffs = (np.diff(imu_leds[indx:indx+sync_sequence]) + 1)
                             if (np.absolute(temp_diffs - first_diffs) <= sample_error).all():
                                 print('Found first matching LED at sample time {}.'.format(item))
                                 important_led_positions.append(indx)

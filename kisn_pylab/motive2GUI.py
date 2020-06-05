@@ -76,12 +76,17 @@ class Transformer:
         frames = len(data)
 
         # get relevant imec ground probe timestamps
-        time_stamps = {'startratcamtimestamp': int(full_pkl_file.iloc[1, ground_probe]), 'stopratcamtimestamp': int(full_pkl_file.iloc[-2, ground_probe]), 'startsessiontimestamp': 0,
-                       'stopsessiontimestamp': int(full_pkl_file.iloc[-1, ground_probe]), 'starttrackingtimestamp': int(full_pkl_file.iloc[1, ground_probe]),
+        time_stamps = {'startratcamtimestamp': int(full_pkl_file.iloc[1, ground_probe]),
+                       'stopratcamtimestamp': int(full_pkl_file.iloc[-2, ground_probe]),
+                       'startsessiontimestamp': 0,
+                       'stopsessiontimestamp': int(full_pkl_file.iloc[-1, ground_probe]),
+                       'starttrackingtimestamp': int(full_pkl_file.iloc[1, ground_probe]),
                        'stoptrackingtimestamp': int(full_pkl_file.iloc[-2, ground_probe])}
 
         # load .csv file and get labels data
-        labels_dict = {'Marker1': 0, 'Marker2': 1, 'Marker3': 2, 'Marker4': 3, 'Neck': 4, 'Back': 5, 'Ass': 6, 'LED1': 7, 'LED2': 8, 'LED3': 9}
+        labels_dict = {'Marker1': 0, 'Marker2': 1, 'Marker3': 2, 'Marker4': 3,
+                       'Neck': 4, 'Back': 5, 'Ass': 6, 'LED1': 7, 'LED2': 8, 'LED3': 9}
+
         num_of_markers = len(labels_dict.keys())
 
         labels = []

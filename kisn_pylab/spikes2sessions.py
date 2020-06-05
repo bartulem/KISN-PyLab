@@ -10,8 +10,8 @@ After cluster-cutting, regardless of whether the sessions were concatenated or n
 for every individual cluster need to be converted from sample number into seconds, relative to session
 start. Matters are more complicated in the multi-probe configuration, as one sample stream needs to be
 re-calculated relative to the other (i.e. ground probe) sample stream (because they are running on
-different clocks). This is done by regressing one stream onto another and using the fit model to predict
-what the spike sample occurrences would be if recorded on the ground probe clock.
+different clocks). This is done by regressing one sync LED stream onto another and using the fit model to
+predict what the spike sample occurrences would be if recorded on the ground probe clock.
 
 """
 
@@ -57,6 +57,8 @@ class ExtractSpikes:
             To plot or not to plot y_test and y_test_prediction scatter plot; defaults to 0.
         print_details : boolean (0/False or 1/True)
             Whether or not to print details about spikes in every individual cluster; defaults to 0.
+        important_cluster_groups : list
+            The list of relevant cluster groups you want to analyze, should be 'good' and 'mua'; defaults to [good].
         ----------
         """
 
@@ -78,6 +80,7 @@ class ExtractSpikes:
         ground_probe = int([kwargs['ground_probe'] if 'ground_probe' in kwargs.keys() else 0][0])
         to_plot = [kwargs['to_plot'] if 'to_plot' in kwargs.keys() and kwargs['to_plot'] in valid_bools else 0][0]
         print_details = [kwargs['print_details'] if 'print_details' in kwargs.keys() and kwargs['print_details'] in valid_bools else 0][0]
+        important_cluster_groups = [kwargs['important_cluster_groups'] if 'important_cluster_groups' in kwargs.keys() and kwargs['important_cluster_groups'] == list else ['good']][0]
 
         # check that the .pkl concatenation files are there
         if pkl_lengths != 0:
@@ -118,35 +121,52 @@ class ExtractSpikes:
             spike_dict[dir_key]['dir'] = one_dir
 
         t = time.time()
-        print('Splitting clusters to individual sessions, please be patient - this could take awhile (depending on the number of sessions/clusters).')
+        print('Splitting clusters to individual sessions, please be patient - this could '
+              'take awhile (depending on the number of sessions/clusters).')
 
-        # check if one or more sessions require splitting
-        if not one_session:
+        # create dictionary which would store information about cluster groups
+        cluster_groups_info = {}
 
-            # get spikes from every good cluster and save them as spike times according to each session start
-            for probe in spike_dict.keys():
+        # get spikes from every good cluster and save them as spike times according to each session start
+        for probe in spike_dict.keys():
 
-                probe_id = int(probe[-1])
+            # each probe gets a place in the cluster groups information dictionary
+            cluster_groups_info[probe] = {}
 
-                # create a big dictionary where all the cells go
-                probe_spike_data = {}
+            probe_id = int(probe[-1])
 
-                # extract cluster data
-                cluster_info = spike_dict[probe]['cluster_info']
-                spike_clusters = spike_dict[probe]['spike_clusters']
-                spike_times = spike_dict[probe]['spike_times']
+            # create a big dictionary where all the cells go
+            probe_spike_data = {}
 
+            # extract cluster data
+            cluster_info = spike_dict[probe]['cluster_info']
+            spike_clusters = spike_dict[probe]['spike_clusters']
+            spike_times = spike_dict[probe]['spike_times']
+
+            if not one_session:
                 # load changepoints for different sessions
                 file_lengths = spike_dict[probe]['file_lengths']
 
-                for indx in range(cluster_info.shape[0]):
-                    if cluster_info.loc[indx, 'group'] == 'good':
-                        cluster_indices = np.where(spike_clusters == cluster_info.loc[indx, 'id'])[0]
-                        spikes_all_sessions = np.take(spike_times, cluster_indices)
+            for indx in range(cluster_info.shape[0]):
+                if cluster_info.loc[indx, 'group'] in important_cluster_groups:
 
-                        # creat spike_dict and put each spike in the appropriate session
+                    # check if cluster group key exists in cluster groups information dictionary, if not - create it
+                    if cluster_info.loc[indx, 'group'] not in cluster_groups_info[probe].keys():
+                        cluster_groups_info[probe][cluster_info.loc[indx, 'group']] = []
+
+                    # get all spikes for that cluster
+                    cluster_indices = np.where(spike_clusters == cluster_info.loc[indx, 'id'])[0]
+                    spikes_all = np.take(spike_times, cluster_indices)
+
+                    # creat spike_dict and put each spike in the appropriate session
+                    if one_session:
+                        spikes_dict = {'session_1': []}
+                        if probe_id == ground_probe:
+                            for aspike in spikes_all:
+                                spikes_dict['session_1'].append(aspike / npx_sampling_rate)
+                    else:
                         spikes_dict = {'session_{}'.format(x + 1): [] for x in range(len(file_lengths.keys()) - 1)}
-                        for aspike in spikes_all_sessions:
+                        for aspike in spikes_all:
                             truth = True
                             while truth:
                                 for xx in range(len(file_lengths.keys()) - 1):
@@ -159,112 +179,11 @@ class ExtractSpikes:
                                             spikes_dict['session_{}'.format(xx + 1)].append(aspike - lower_bound)
                                         truth = False
 
-                            if not probe_id == ground_probe:
-                                for sessionindx, asession in enumerate(spikes_dict.keys()):
-
-                                    # read in sync .pkl file (there should only be one in the list for one recording session)
-                                    with open(sync_pkls[sessionindx], 'rb') as sync_pkl:
-                                        full_session_df = pickle.load(sync_pkl)
-
-                                    # separate the imec part of the dataframe
-                                    reduced_session_df = full_session_df.iloc[1:-1, :2]
-
-                                    # regress
-                                    regress_session_class = regress.LinRegression(reduced_session_df)
-                                    regression_session_dict = regress_session_class.split_train_test_and_regress(xy_order=[probe_id, 1-probe_id], extra_data=np.array(spikes_dict['session_{}'.format(sessionindx + 1)]))
-
-                                    # prepare arrays for plotting and check if the transformation is acceptable
-                                    y_session_test = regression_session_dict['y_test']
-                                    y_session_test_predictions = np.array([int(round(sample)) for sample in regression_session_dict['y_test_predictions']])
-                                    true_predicted_differences = (y_session_test - y_session_test_predictions) / (npx_sampling_rate / 1e3)
-                                    print('The differences between session {} imec test and imec test predictions are: median {:.2f} ms, mean {:.2f} ms, max {:.2f} ms.'.format(sessionindx + 1, np.abs(np.nanmedian(true_predicted_differences)), np.abs(np.nanmean(true_predicted_differences)), np.nanmax(np.abs(true_predicted_differences))))
-
-                                    # plot
-                                    if to_plot:
-                                        fig = make_subplots(rows=1, cols=2)
-                                        fig.update_layout(height=500, width=1000, plot_bgcolor='#FFFFFF', title='imec regression quality', showlegend=True)
-                                        fig.append_trace(go.Scatter(x=y_session_test, y=y_session_test_predictions, mode='markers', name='LED test comparison', marker=dict(color='#66CDAA', size=5)), row=1, col=1)
-                                        fig['layout']['xaxis1'].update(title='other probe test (samples)')
-                                        fig['layout']['yaxis1'].update(title='other probe test predictions (samples)')
-
-                                        fig.append_trace(go.Histogram(x=true_predicted_differences, nbinsx=15, name='LED prediction errors', marker_color='#66CDAA', opacity=.75), row=1, col=2)
-                                        fig['layout']['xaxis2'].update(title='true - predicted (ms)')
-                                        fig['layout']['yaxis2'].update(title='count')
-                                        fig.show()
-
-                                    # allocate spikes
-                                    session_spikes = []
-                                    for aspike in regression_session_dict['extra_data_predictions']:
-                                        if aspike > 0:
-                                            session_spikes.append(int(round(aspike)) / npx_sampling_rate)
-
-                                    spikes_dict['session_{}'.format(sessionindx + 1)] = session_spikes
-
-                        if print_details:
-                            print('The Phy cluster ID on imec{} is {} (it has a total of {} spikes).'.format(probe_id, cluster_info.loc[indx, 'id'], cluster_info.loc[indx, 'n_spikes']))
-                            print('Splitting spikes in {} sessions produced the following results:'.format(len(file_lengths.keys()) - 1))
-                            for asession in spikes_dict.keys():
-                                print('{} has {} spikes.'.format(asession, len(spikes_dict[asession])))
-                            print('In total, {} spikes have been accounted for.'.format(sum([len(spikes_dict[key]) for key in spikes_dict.keys()])))
-
-                        probe_spike_data['imec{}_cell{:04d}_ch{:03d}'.format(probe_id, cluster_info.loc[indx, 'id'], cluster_info.loc[indx, 'ch'])] = spikes_dict
-
-                # save spike .mat files (only if there's more than *min_spikes* spk/session!)
-                for session in range(len(file_lengths.keys()) - 1):
-                    path = '{}{}imec{}_session{}'.format(spike_dict[probe]['dir'], os.sep, probe_id, session + 1)
-                    if not os.path.exists(path):
-                        os.makedirs(path)
-
-                    cell_count = 0
-                    for acell in probe_spike_data.keys():
-                        if len(probe_spike_data[acell]['session_{}'.format(session + 1)]) > min_spikes:
-                            sio.savemat(path + os.sep + acell + '.mat', {'cellTS': np.array(probe_spike_data[acell]['session_{}'.format(session + 1)])}, oned_as='column')
-                            cell_count += 1
-                        else:
-                            del probe_spike_data[acell]['session_{}'.format(session + 1)]
-
-                    print('In session {} on imec{}, there are {} good clusters (above {} spikes).'.format(session + 1, probe_id, cell_count, min_spikes))
-
-                # check how many cells were present in all sessions
-                omni_present = 0
-                all_sessions = ['session_{}'.format(x + 1) for x in range(len(file_lengths.keys()) - 1)]
-                for acell in probe_spike_data.keys():
-                    if list(probe_spike_data[acell].keys()) == all_sessions:
-                        omni_present += 1
-
-                print('On imec{}, {} cells were present in all sessions'.format(probe_id, omni_present))
-
-        else:
-
-            # get spikes from every good cluster and save them as spike times according to session start
-            for probe in spike_dict.keys():
-
-                probe_id = int(probe[-1])
-
-                # create a dictionary where all the cells go
-                probe_spike_data = {}
-
-                # extract cluster data
-                cluster_info = spike_dict[probe]['cluster_info']
-                spike_clusters = spike_dict[probe]['spike_clusters']
-                spike_times = spike_dict[probe]['spike_times']
-
-                for indx in range(cluster_info.shape[0]):
-                    if cluster_info.loc[indx, 'group'] == 'good':
-                        cluster_indices = np.where(spike_clusters == cluster_info.loc[indx, 'id'])[0]
-                        spikes_all = np.take(spike_times, cluster_indices)
-
-                        if print_details:
-                            print('The Phy cluster ID is {} (it has a total of {} spikes).'.format(cluster_info.loc[indx, 'id'], cluster_info.loc[indx, 'n_spikes']))
-
-                        spikes = []
-                        if probe_id == ground_probe:
-                            for aspike in spikes_all:
-                                spikes.append(aspike / npx_sampling_rate)
-                        else:
+                    if not probe_id == ground_probe:
+                        for sessionindx, asession in enumerate(spikes_dict.keys()):
 
                             # read in sync .pkl file (there should only be one in the list for one recording session)
-                            with open(sync_pkls[0], 'rb') as sync_pkl:
+                            with open(sync_pkls[sessionindx], 'rb') as sync_pkl:
                                 full_session_df = pickle.load(sync_pkl)
 
                             # separate the imec part of the dataframe
@@ -272,45 +191,101 @@ class ExtractSpikes:
 
                             # regress
                             regress_session_class = regress.LinRegression(reduced_session_df)
-                            regression_session_dict = regress_session_class.split_train_test_and_regress(xy_order=[probe_id, 1-probe_id], extra_data=spikes_all)
+                            regression_session_dict = regress_session_class.split_train_test_and_regress(xy_order=[probe_id, 1-probe_id],
+                                                                                                         extra_data=np.array(spikes_dict['session_{}'.format(sessionindx + 1)]))
 
                             # prepare arrays for plotting and check if the transformation is acceptable
                             y_session_test = regression_session_dict['y_test']
                             y_session_test_predictions = np.array([int(round(sample)) for sample in regression_session_dict['y_test_predictions']])
                             true_predicted_differences = (y_session_test - y_session_test_predictions) / (npx_sampling_rate / 1e3)
-                            print('The differences between imec test and imec test predictions are: median {:.2f} ms, mean {:.2f} ms, max {:.2f} ms.'.format(np.abs(np.nanmedian(true_predicted_differences)), np.abs(np.nanmean(true_predicted_differences)), np.nanmax(np.abs(true_predicted_differences))))
+                            print('The differences between session {} imec test and imec test predictions are: '
+                                  'median {:.2f} ms, mean {:.2f} ms, max {:.2f} ms.'.format(sessionindx + 1,
+                                                                                            np.abs(np.nanmedian(true_predicted_differences)),
+                                                                                            np.abs(np.nanmean(true_predicted_differences)),
+                                                                                            np.nanmax(np.abs(true_predicted_differences))))
 
                             # plot
                             if to_plot:
-                                fig2 = make_subplots(rows=1, cols=2)
-                                fig2.update_layout(height=500, width=1000, plot_bgcolor='#FFFFFF', title='imec regression quality', showlegend=True)
-                                fig2.append_trace(go.Scatter(x=y_session_test, y=y_session_test_predictions, mode='markers', name='LED test comparison', marker=dict(color='#66CDAA', size=5)), row=1, col=1)
-                                fig2['layout']['xaxis1'].update(title='other probe test (samples)')
-                                fig2['layout']['yaxis1'].update(title='other probe test predictions (samples)')
+                                fig = make_subplots(rows=1, cols=2)
+                                fig.update_layout(height=500, width=1000, plot_bgcolor='#FFFFFF', title='imec regression quality', showlegend=True)
+                                fig.append_trace(go.Scatter(x=y_session_test, y=y_session_test_predictions, mode='markers',
+                                                            name='LED test comparison', marker=dict(color='#66CDAA', size=5)), row=1, col=1)
+                                fig['layout']['xaxis1'].update(title='other probe test (samples)')
+                                fig['layout']['yaxis1'].update(title='other probe test predictions (samples)')
 
-                                fig2.append_trace(go.Histogram(x=true_predicted_differences, nbinsx=15, name='LED prediction errors', marker_color='#66CDAA', opacity=.75), row=1, col=2)
-                                fig2['layout']['xaxis2'].update(title='true - predicted (ms)')
-                                fig2['layout']['yaxis2'].update(title='count')
-                                fig2.show()
+                                fig.append_trace(go.Histogram(x=true_predicted_differences, nbinsx=15,
+                                                              name='LED prediction errors', marker_color='#66CDAA', opacity=.75), row=1, col=2)
+                                fig['layout']['xaxis2'].update(title='true - predicted (ms)')
+                                fig['layout']['yaxis2'].update(title='count')
+                                fig.show()
 
                             # allocate spikes
+                            session_spikes = []
                             for aspike in regression_session_dict['extra_data_predictions']:
                                 if aspike > 0:
-                                    spikes.append(int(round(aspike)) / npx_sampling_rate)
+                                    session_spikes.append(int(round(aspike)) / npx_sampling_rate)
 
-                        probe_spike_data['imec{}_cell{:04d}_ch{:03d}'.format(probe_id, cluster_info.loc[indx, 'id'], cluster_info.loc[indx, 'ch'])] = spikes
+                            spikes_dict['session_{}'.format(sessionindx + 1)] = session_spikes
 
-                # save spike .mat files (only if there's more than *min_spikes* spk/session!)
-                path = '{}{}imec{}_session1'.format(spike_dict[probe]['dir'], os.sep, probe_id)
+                    if one_session and print_details:
+                        print('The Phy cluster ID is {} (it has a total of {} spikes).'.format(cluster_info.loc[indx, 'id'], cluster_info.loc[indx, 'n_spikes']))
+
+                    if not one_session and print_details:
+                        print('The Phy cluster ID on imec{} is {} (it has a total of {} spikes).'.format(probe_id, cluster_info.loc[indx, 'id'], cluster_info.loc[indx, 'n_spikes']))
+                        print('Splitting spikes in {} sessions produced the following results:'.format(len(file_lengths.keys()) - 1))
+                        for asession in spikes_dict.keys():
+                            print('{} has {} spikes.'.format(asession, len(spikes_dict[asession])))
+                        print('In total, {} spikes have been accounted for.'.format(sum([len(spikes_dict[key]) for key in spikes_dict.keys()])))
+
+                    cell_id = 'imec{}_cell{:04d}_ch{:03d}'.format(probe_id, cluster_info.loc[indx, 'id'], cluster_info.loc[indx, 'ch'])
+                    probe_spike_data[cell_id] = spikes_dict
+
+                    # get cell_id into the cluster groups information dictionary
+                    if cell_id not in cluster_groups_info[probe][cluster_info.loc[indx, 'group']]:
+                        cluster_groups_info[probe][cluster_info.loc[indx, 'group']].append(cell_id)
+
+            # save spike .mat files (only if there's more than *min_spikes* spk/session!)
+            if one_session:
+                the_range = 1
+            else:
+                the_range = len(file_lengths.keys()) - 1
+
+            for session in range(the_range):
+                path = '{}{}imec{}_session{}'.format(spike_dict[probe]['dir'], os.sep, probe_id, session + 1)
                 if not os.path.exists(path):
                     os.makedirs(path)
 
-                cell_count = 0
+                unit_count = 0
+                mua_count = 0
                 for acell in probe_spike_data.keys():
-                    if len(probe_spike_data[acell]) > min_spikes:
-                        sio.savemat(path + os.sep + acell + '.mat', {'cellTS': np.array(probe_spike_data[acell])}, oned_as='column')
-                        cell_count += 1
+                    if len(probe_spike_data[acell]['session_{}'.format(session + 1)]) > min_spikes:
+                        sio.savemat(path + os.sep + acell + '.mat', {'cellTS': np.array(probe_spike_data[acell]['session_{}'.format(session + 1)])}, oned_as='column')
+                        if acell in cluster_groups_info[probe]['good']:
+                            unit_count += 1
+                        elif 'mua' in cluster_groups_info[probe].keys() and acell in cluster_groups_info[probe]['mua']:
+                            mua_count += 1
+                    else:
+                        del probe_spike_data[acell]['session_{}'.format(session + 1)]
 
-                print('In this session, on imec{} there are {} good clusters (above {} spikes).'.format(probe_id, cell_count, min_spikes))
+                print('In session {} on imec{}, there are {} putative single units and {} MUs (above {} spikes).'.format(session + 1, probe_id, unit_count, mua_count, min_spikes))
+
+            # check how many cells were present in all sessions
+            if not one_session:
+                omni_present_units = 0
+                omni_present_mua = 0
+                all_sessions = ['session_{}'.format(x + 1) for x in range(len(file_lengths.keys()) - 1)]
+                for acell in probe_spike_data.keys():
+                    if list(probe_spike_data[acell].keys()) == all_sessions:
+                        if acell in cluster_groups_info[probe]['good']:
+                            omni_present_units += 1
+                        elif 'mua' in cluster_groups_info[probe].keys() and acell in cluster_groups_info[probe]['mua']:
+                            omni_present_mua += 1
+
+                print('On imec{}, {} putative single units and {} MUs were present in all sessions.'.format(probe_id, omni_present_units, omni_present_mua))
+
+        # save cluster groups information dictionary to file (it's saved in the imec0 Kilosort results directory)
+        if 'mua' in important_cluster_groups:
+            with open('{}{}cluster_groups_information.pkl'.format(self.the_dirs[0], os.sep), 'wb') as cgi_file:
+                pickle.dump(cluster_groups_info, cgi_file)
 
         print('Processing complete! It took {:.2f} minute(s).'.format((time.time() - t) / 60))

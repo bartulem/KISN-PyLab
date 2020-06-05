@@ -150,7 +150,10 @@ class Sync:
                         true_predicted_differences = (data_stream_dict[imec_data]['y_test'] - data_stream_dict[imec_data]['y_test_predictions'])*1e3
                         differences_dict[imec_data] = true_predicted_differences
 
-                        print('The differences between NPX test and NPX test predictions are: median {:.2f} ms, mean {:.2f} ms, max {:.2f} ms.'.format(np.abs(np.nanmedian(true_predicted_differences)), np.abs(np.nanmean(true_predicted_differences)), np.nanmax(np.abs(true_predicted_differences))))
+                        print('The differences between NPX test and NPX test predictions are: '
+                              'median {:.2f} ms, mean {:.2f} ms, max {:.2f} ms.'.format(np.abs(np.nanmedian(true_predicted_differences)),
+                                                                                        np.abs(np.nanmean(true_predicted_differences)),
+                                                                                        np.nanmax(np.abs(true_predicted_differences))))
 
                         emp_fr_rate = round(1/data_stream_dict[imec_data]['slope'], 5)
                         empirical_frame_rates.append(emp_fr_rate)
@@ -173,7 +176,10 @@ class Sync:
                         differences_dict[imec_data] = true_predicted_differences
 
                         print('For imec probe {} sample time predicted by the Teensy clock:'.format(int(imec_data[-1])))
-                        print('The differences between NPX test and NPX test predictions are: median {:.2f} ms, mean {:.2f} ms, max {:.2f} ms.'.format(np.abs(np.nanmedian(true_predicted_differences)), np.abs(np.nanmean(true_predicted_differences)), np.nanmax(np.abs(true_predicted_differences))))
+                        print('The differences between NPX test and NPX test predictions are: '
+                              'median {:.2f} ms, mean {:.2f} ms, max {:.2f} ms.'.format(np.abs(np.nanmedian(true_predicted_differences)),
+                                                                                        np.abs(np.nanmean(true_predicted_differences)),
+                                                                                        np.nanmax(np.abs(true_predicted_differences))))
 
                 # plot NPX test and NPX test prediction differences
                 if to_plot:
@@ -182,18 +188,21 @@ class Sync:
                     fig.update_layout(height=500*len(data_stream_dict.keys()), width=1000, plot_bgcolor='#FFFFFF', title='{}'.format(data_stream), showlegend=True)
                     fig_order = [[1, 2], [3, 4]]
                     for indx, imec_data in enumerate(imec_data_cols):
-                        fig.append_trace(go.Scatter(x=data_stream_dict[imec_data]['y_test'], y=data_stream_dict[imec_data]['y_test_predictions'], mode='markers', name='{} predictions'.format(imec_data), marker=dict(color=colors[imec_data], size=5)), row=indx+1, col=1)
+                        fig.append_trace(go.Scatter(x=data_stream_dict[imec_data]['y_test'], y=data_stream_dict[imec_data]['y_test_predictions'],
+                                                    mode='markers', name='{} predictions'.format(imec_data), marker=dict(color=colors[imec_data], size=5)), row=indx+1, col=1)
                         fig['layout']['xaxis{}'.format(fig_order[indx][0])].update(title='NPX test (s)')
                         fig['layout']['yaxis{}'.format(fig_order[indx][0])].update(title='NPX test predictions (s)')
 
-                        fig.append_trace(go.Histogram(x=differences_dict[imec_data], nbinsx=15, name='{} errors'.format(imec_data), marker_color=colors[imec_data], opacity=.75), row=indx+1, col=2)
+                        fig.append_trace(go.Histogram(x=differences_dict[imec_data], nbinsx=15, name='{} errors'.format(imec_data),
+                                                      marker_color=colors[imec_data], opacity=.75), row=indx+1, col=2)
                         fig['layout']['xaxis{}'.format(fig_order[indx][1])].update(title='true - predicted (ms)')
                         fig['layout']['yaxis{}'.format(fig_order[indx][1])].update(title='count')
                     fig.show()
 
                     if data_stream != 'tracking' and imu_files != 0:
                         # plot the distribution of time differences between successive Teensy samples
-                        print('The minimum difference between subsequent Teensy samples is {} ms, while the maximum is {} ms.'.format(np.min(teensy_times[file_key]), np.max(teensy_times[file_key])))
+                        print('The minimum difference between subsequent Teensy samples is '
+                              '{} ms, while the maximum is {} ms.'.format(np.min(teensy_times[file_key]), np.max(teensy_times[file_key])))
                         fig2 = go.Figure()
                         fig2.update_layout(height=500, width=500, yaxis_type='log', plot_bgcolor='#FFFFFF', showlegend=False)
                         fig2.add_trace(go.Histogram(x=teensy_times[file_key], nbinsx=10, marker_color='#458B74', opacity=.75))

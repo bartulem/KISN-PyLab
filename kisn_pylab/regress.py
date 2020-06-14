@@ -29,7 +29,7 @@ class LinRegression:
     def split_train_test_and_regress(self, **kwargs):
 
         """
-        Parameters
+        Inputs
         ----------
         **kwargs: dictionary
         xy_order : list
@@ -39,8 +39,8 @@ class LinRegression:
         ----------
         """
 
-        xy_order = [kwargs['xy_order'] if 'xy_order' in kwargs.keys() and type(kwargs['xy_order']) == list and len(kwargs['xy_order']) == 2 else [0, 1]][0]
-        extra_data = [kwargs['extra_data'] if 'extra_data' in kwargs.keys() else 0][0]
+        xy_order = kwargs['xy_order'] if 'xy_order' in kwargs.keys() and type(kwargs['xy_order']) == list and len(kwargs['xy_order']) == 2 else [0, 1]
+        extra_data = kwargs['extra_data'] if 'extra_data' in kwargs.keys() else 0
 
         # check if the input dataframe has nans, and if so - eliminate those rows
         if self.input_data.isnull().values.any():

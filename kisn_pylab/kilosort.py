@@ -41,7 +41,7 @@ def run_kilosort(file_dir, kilosort2_dir):
     
     # run Kilosort2
     print('Running Kilosort2, please be patient - this could take >1 hour.')
-    t = time.time()
+    start_time = time.time()
 
     eng = matlab.engine.start_matlab()
     eng.cd(kilosort2_dir, nargout=0)
@@ -49,4 +49,4 @@ def run_kilosort(file_dir, kilosort2_dir):
     eng.master_kilosort(file_dir, nargout=0)
     eng.quit()
 
-    print('Finished! Running Kilosort2 took {:.2f} minutes.\n'.format((time.time() - t) / 60))
+    print('Finished! Running Kilosort2 took {:.2f} minutes.\n'.format((time.time() - start_time) / 60))

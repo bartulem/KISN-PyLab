@@ -46,7 +46,7 @@ class Concat:
     def concat_npx(self, **kwargs):
 
         """
-        Parameters
+        Inputs
         ----------
         **kwargs: dictionary
         cmd_prompt : boolean (0/False or 1/True)
@@ -68,10 +68,10 @@ class Concat:
         # valid values for booleans
         valid_bools = [0, False, 1, True]
 
-        cmd_prompt = [kwargs['cmd_prompt'] if 'cmd_prompt' in kwargs.keys() and kwargs['cmd_prompt'] in valid_bools else 1][0]
-        nchan = int([kwargs['nchan'] if 'nchan' in kwargs.keys() and (type(kwargs['nchan']) == int or type(kwargs['nchan']) == float) else 385][0])
-        npx_sampling_rate = float([kwargs['npx_sampling_rate'] if 'npx_sampling_rate' in kwargs.keys() else 3e4][0])
-        file_type = [kwargs['file_type'] if 'file_type' in kwargs.keys() and (kwargs['file_type'] == 'ap' or kwargs['file_type'] == 'lf') else 'ap'][0]
+        cmd_prompt = kwargs['cmd_prompt'] if 'cmd_prompt' in kwargs.keys() and kwargs['cmd_prompt'] in valid_bools else 1
+        nchan = int(kwargs['nchan'] if 'nchan' in kwargs.keys() and (type(kwargs['nchan']) == int or type(kwargs['nchan']) == float) else 385)
+        npx_sampling_rate = float(kwargs['npx_sampling_rate'] if 'npx_sampling_rate' in kwargs.keys() else 3e4)
+        file_type = kwargs['file_type'] if 'file_type' in kwargs.keys() and (kwargs['file_type'] == 'ap' or kwargs['file_type'] == 'lf') else 'ap'
 
         # print to see if order of concatenation is right
         file_lst = []
@@ -119,7 +119,7 @@ class Concat:
             pickle.dump(file_lengths, save_dict)
 
         print('Concatenating files, please be patient - this could take >1 hour.')
-        t = time.time()
+        start_time = time.time()
 
         if not cmd_prompt:
 
@@ -173,4 +173,4 @@ class Concat:
             # outsource command
             os.system('cmd /c "{}"'.format(command))
 
-        print('Concatenation complete! It took {:.2f} minutes.'.format((time.time() - t) / 60))
+        print('Concatenation complete! It took {:.2f} minutes.'.format((time.time() - start_time) / 60))

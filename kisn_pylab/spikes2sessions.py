@@ -36,7 +36,7 @@ class ExtractSpikes:
     def split_clusters(self, **kwargs):
 
         """
-        Parameters
+        Inputs
         ----------
         **kwargs: dictionary
         one_session : boolean (0/False or 1/True)
@@ -59,6 +59,10 @@ class ExtractSpikes:
             Whether or not to print details about spikes in every individual cluster; defaults to 0.
         important_cluster_groups : list
             The list of relevant cluster groups you want to analyze, should be 'good' and 'mua'; defaults to [good].
+        eliminate_duplicates : boolean (0/False or 1/True)
+            Whether or not to eliminate duplicate spikes; defaults to 1.
+        min_isi : int/float
+            Threshold for duplicate spikes in seconds; defaults to 0.
         ----------
         """
 
@@ -71,16 +75,18 @@ class ExtractSpikes:
         # valid values for booleans
         valid_bools = [0, False, 1, True]
 
-        one_session = [kwargs['one_session'] if 'one_session' in kwargs.keys() and kwargs['one_session'] in valid_bools else 1][0]
-        nchan = int([kwargs['nchan'] if 'nchan' in kwargs.keys() and (type(kwargs['nchan']) == int or type(kwargs['nchan']) == float) else 385][0])
-        min_spikes = [kwargs['min_spikes'] if 'min_spikes' in kwargs.keys() and (type(kwargs['min_spikes']) == int or type(kwargs['min_spikes']) == float) else 100][0]
-        npx_sampling_rate = float([kwargs['npx_sampling_rate'] if 'npx_sampling_rate' in kwargs.keys() else 3e4][0])
-        pkl_lengths = [kwargs['pkl_lengths'] if 'pkl_lengths' in kwargs.keys() else 0][0]
-        sync_pkls = [kwargs['sync_pkls'] if 'sync_pkls' in kwargs.keys() else 0][0]
-        ground_probe = int([kwargs['ground_probe'] if 'ground_probe' in kwargs.keys() else 0][0])
-        to_plot = [kwargs['to_plot'] if 'to_plot' in kwargs.keys() and kwargs['to_plot'] in valid_bools else 0][0]
-        print_details = [kwargs['print_details'] if 'print_details' in kwargs.keys() and kwargs['print_details'] in valid_bools else 0][0]
-        important_cluster_groups = [kwargs['important_cluster_groups'] if 'important_cluster_groups' in kwargs.keys() and kwargs['important_cluster_groups'] == list else ['good']][0]
+        one_session = kwargs['one_session'] if 'one_session' in kwargs.keys() and kwargs['one_session'] in valid_bools else 1
+        nchan = int(kwargs['nchan'] if 'nchan' in kwargs.keys() and (type(kwargs['nchan']) == int or type(kwargs['nchan']) == float) else 385)
+        min_spikes = kwargs['min_spikes'] if 'min_spikes' in kwargs.keys() and (type(kwargs['min_spikes']) == int or type(kwargs['min_spikes']) == float) else 100
+        npx_sampling_rate = float(kwargs['npx_sampling_rate'] if 'npx_sampling_rate' in kwargs.keys() else 3e4)
+        pkl_lengths = kwargs['pkl_lengths'] if 'pkl_lengths' in kwargs.keys() else 0
+        sync_pkls = kwargs['sync_pkls'] if 'sync_pkls' in kwargs.keys() else 0
+        ground_probe = int(kwargs['ground_probe'] if 'ground_probe' in kwargs.keys() else 0)
+        to_plot = kwargs['to_plot'] if 'to_plot' in kwargs.keys() and kwargs['to_plot'] in valid_bools else 0
+        print_details = kwargs['print_details'] if 'print_details' in kwargs.keys() and kwargs['print_details'] in valid_bools else 0
+        important_cluster_groups = kwargs['important_cluster_groups'] if 'important_cluster_groups' in kwargs.keys() and kwargs['important_cluster_groups'] == list else ['good']
+        eliminate_duplicates = kwargs['eliminate_duplicates'] if 'eliminate_duplicates' in kwargs.keys() and kwargs['eliminate_duplicates'] in valid_bools else 1
+        min_isi = kwargs['min_isi'] if 'min_isi' in kwargs.keys() and (type(kwargs['min_isi']) == int or type(kwargs['min_isi']) == float) else 0
 
         # check that the .pkl concatenation files are there
         if pkl_lengths != 0:
@@ -120,7 +126,7 @@ class ExtractSpikes:
             # keep info about the directory
             spike_dict[dir_key]['dir'] = one_dir
 
-        t = time.time()
+        start_time = time.time()
         print('Splitting clusters to individual sessions, please be patient - this could '
               'take awhile (depending on the number of sessions/clusters).')
 
@@ -237,7 +243,7 @@ class ExtractSpikes:
                             print('{} has {} spikes.'.format(asession, len(spikes_dict[asession])))
                         print('In total, {} spikes have been accounted for.'.format(sum([len(spikes_dict[key]) for key in spikes_dict.keys()])))
 
-                    cell_id = 'imec{}_cell{:04d}_ch{:03d}'.format(probe_id, cluster_info.loc[indx, 'id'], cluster_info.loc[indx, 'ch'])
+                    cell_id = 'imec{}_cl{:04d}_ch{:03d}'.format(probe_id, cluster_info.loc[indx, 'id'], cluster_info.loc[indx, 'ch'])
                     probe_spike_data[cell_id] = spikes_dict
 
                     # get cell_id into the cluster groups information dictionary
@@ -257,9 +263,16 @@ class ExtractSpikes:
 
                 unit_count = 0
                 mua_count = 0
+                duplicates = {}
                 for acell in probe_spike_data.keys():
                     if len(probe_spike_data[acell]['session_{}'.format(session + 1)]) > min_spikes:
-                        sio.savemat(path + os.sep + acell + '.mat', {'cellTS': np.array(probe_spike_data[acell]['session_{}'.format(session + 1)])}, oned_as='column')
+                        cluster_data = np.array(probe_spike_data[acell]['session_{}'.format(session + 1)])
+                        if eliminate_duplicates:
+                            duplicate_spikes = np.where(np.diff(cluster_data) <= min_isi)[0]
+                            cluster_data = np.delete(cluster_data, duplicate_spikes + 1)
+                            if len(duplicate_spikes) > 0:
+                                duplicates[acell] = len(duplicate_spikes)
+                        sio.savemat(path + os.sep + acell + '.mat', {'cellTS': cluster_data}, oned_as='column')
                         if acell in cluster_groups_info[probe]['good']:
                             unit_count += 1
                         elif 'mua' in cluster_groups_info[probe].keys() and acell in cluster_groups_info[probe]['mua']:
@@ -268,6 +281,9 @@ class ExtractSpikes:
                         del probe_spike_data[acell]['session_{}'.format(session + 1)]
 
                 print('In session {} on imec{}, there are {} putative single units and {} MUs (above {} spikes).'.format(session + 1, probe_id, unit_count, mua_count, min_spikes))
+                if len(duplicates.keys()) > 0 and print_details:
+                    for key in duplicates.keys():
+                        print('{} had {} duplicate spikes removed.'.format(key, duplicates[key]))
 
             # check how many cells were present in all sessions
             if not one_session:
@@ -288,4 +304,4 @@ class ExtractSpikes:
             with open('{}{}cluster_groups_information.pkl'.format(self.the_dirs[0], os.sep), 'wb') as cgi_file:
                 pickle.dump(cluster_groups_info, cgi_file)
 
-        print('Processing complete! It took {:.2f} minute(s).'.format((time.time() - t) / 60))
+        print('Processing complete! It took {:.2f} minute(s).'.format((time.time() - start_time) / 60))

@@ -34,15 +34,12 @@ import time
 import csv
 import pandas as pd
 import pickle
-from astropy.convolution import convolve
-from astropy.convolution import Gaussian1DKernel
-from astropy.utils.exceptions import AstropyWarning
 from collections import Counter
 import operator
 import warnings
-
-
-warnings.simplefilter('ignore', category=AstropyWarning)
+warnings.simplefilter('ignore')
+from astropy.convolution import convolve
+from astropy.convolution import Gaussian1DKernel
 
 
 class EventReader:
@@ -55,7 +52,7 @@ class EventReader:
     def read_se(self, **kwargs):
 
         """
-        Parameters
+        Inputs
         ----------
         **kwargs: dictionary
         nchan : int/float
@@ -87,19 +84,19 @@ class EventReader:
         ----------
         """
 
-        nchan = int([kwargs['nchan'] if 'nchan' in kwargs.keys() and (type(kwargs['nchan']) == int or type(kwargs['nchan']) == float) else 385][0])
-        sync_chan = int([kwargs['sync_chan'] if 'sync_chan' in kwargs.keys() and (type(kwargs['sync_chan']) == int or type(kwargs['sync_chan']) == float) else 385][0])
-        track_file = [kwargs['track_file'] if 'track_file' in kwargs.keys() and type(kwargs['track_file']) == str else 0][0]
-        imu_file = [kwargs['imu_file'] if 'imu_file' in kwargs.keys() and type(kwargs['imu_file']) == str else 0][0]
-        imu_pkl = [kwargs['imu_pkl'] if 'imu_pkl' in kwargs.keys() and type(kwargs['imu_pkl']) == str else 0][0]
-        jitter_samples = int([kwargs['jitter_samples'] if 'jitter_samples' in kwargs.keys() and (type(kwargs['jitter_samples']) == int or type(kwargs['jitter_samples']) == float) else 3][0])
-        half_smooth_window = int([kwargs['half_smooth_window'] if 'half_smooth_window' in kwargs.keys() and (type(kwargs['half_smooth_window']) == int or type(kwargs['half_smooth_window']) == float) else 10][0])
-        ground_probe = int([kwargs['ground_probe'] if 'ground_probe' in kwargs.keys() else 0][0])
-        frame_rate = float([kwargs['frame_rate'] if 'frame_rate' in kwargs.keys() else 120.][0])
-        npx_sampling_rate = int([kwargs['npx_sampling_rate'] if 'npx_sampling_rate' in kwargs.keys() else 3e4][0])
-        sync_sequence = int([kwargs['sync_sequence'] if 'sync_sequence' in kwargs.keys() else 10][0])
-        sample_error = int([kwargs['sample_error'] if 'sample_error' in kwargs.keys() and (type(kwargs['sample_error']) == int or type(kwargs['sample_error']) == float) else 20][0])
-        which_imu_time = int([kwargs['which_imu_time'] if 'which_imu_time' in kwargs.keys() and (type(kwargs['which_imu_time']) == int or type(kwargs['which_imu_time']) == float) else 1][0])
+        nchan = int(kwargs['nchan'] if 'nchan' in kwargs.keys() and (type(kwargs['nchan']) == int or type(kwargs['nchan']) == float) else 385)
+        sync_chan = int(kwargs['sync_chan'] if 'sync_chan' in kwargs.keys() and (type(kwargs['sync_chan']) == int or type(kwargs['sync_chan']) == float) else 385)
+        track_file = kwargs['track_file'] if 'track_file' in kwargs.keys() and type(kwargs['track_file']) == str else 0
+        imu_file = kwargs['imu_file'] if 'imu_file' in kwargs.keys() and type(kwargs['imu_file']) == str else 0
+        imu_pkl = kwargs['imu_pkl'] if 'imu_pkl' in kwargs.keys() and type(kwargs['imu_pkl']) == str else 0
+        jitter_samples = int(kwargs['jitter_samples'] if 'jitter_samples' in kwargs.keys() and (type(kwargs['jitter_samples']) == int or type(kwargs['jitter_samples']) == float) else 3)
+        half_smooth_window = int(kwargs['half_smooth_window'] if 'half_smooth_window' in kwargs.keys() and (type(kwargs['half_smooth_window']) == int or type(kwargs['half_smooth_window']) == float) else 10)
+        ground_probe = int(kwargs['ground_probe'] if 'ground_probe' in kwargs.keys() else 0)
+        frame_rate = float(kwargs['frame_rate'] if 'frame_rate' in kwargs.keys() else 120.)
+        npx_sampling_rate = int(kwargs['npx_sampling_rate'] if 'npx_sampling_rate' in kwargs.keys() else 3e4)
+        sync_sequence = int(kwargs['sync_sequence'] if 'sync_sequence' in kwargs.keys() else 10)
+        sample_error = int(kwargs['sample_error'] if 'sample_error' in kwargs.keys() and (type(kwargs['sample_error']) == int or type(kwargs['sample_error']) == float) else 20)
+        which_imu_time = int(kwargs['which_imu_time'] if 'which_imu_time' in kwargs.keys() and (type(kwargs['which_imu_time']) == int or type(kwargs['which_imu_time']) == float) else 1)
 
         # check that the NPX files are there
         for anpxfile in self.npx_files:
@@ -107,7 +104,7 @@ class EventReader:
                 print('Could not find file {}, try again.'.format(anpxfile))
                 sys.exit()
 
-        t = time.time()
+        start_time = time.time()
         print('Extracting sync data from NPX file(s), please be patient - this could take >5 minutes.')
 
         # initialize dictionary to store the data in
@@ -157,8 +154,8 @@ class EventReader:
             for inxSync, itemSync in tqdm(enumerate(sync_data)):
                 if jitter_samples < inxSync < (len(sync_data) - 1 - jitter_samples) \
                         and itemSync == high_val and sync_data[inxSync - 1] == low_val \
-                        and np.sum(sync_data[(inxSync - jitter_samples):inxSync]) == low_val*jitter_samples \
-                        and np.sum(sync_data[(inxSync + 1):(inxSync + jitter_samples + 1)]) == high_val*jitter_samples:
+                        and np.sum(sync_data[(inxSync - jitter_samples):inxSync]) == low_val * jitter_samples \
+                        and np.sum(sync_data[(inxSync + 1):(inxSync + jitter_samples + 1)]) == high_val * jitter_samples:
                     probe_sync.append(inxSync)
                     counter_on += 1
             probe_sync.append(len(sync_data))
@@ -189,10 +186,10 @@ class EventReader:
             # something that was a unitary LED event into two different LED events. To prevent this the next snippet
             # of code goes through the tracking file and interpolates those empty frames by smoothing over a window
             # of 10 rows above and below the frame. You can change that number to something else, but it should not
-            # be too large because a large smoothing window can capture true distant LED events and we don't want that.
+            # be too large because a large smoothing window can capture true distant LED events and we don'start_time want that.
 
             corrected_frames = {}
-            led_cols = list(range(columnofint, columnofint+9))
+            led_cols = list(range(columnofint, columnofint + 9))
             original_tracking_data = pd.read_csv(track_file, sep=',', skiprows=6)
 
             print('Correcting fully empty frames.')
@@ -211,15 +208,15 @@ class EventReader:
                             else:
                                 changed_array[inx] = round(original_tracking_data.iloc[i, inx], 6)
                         elif 1 < inx and inx not in led_cols:
-                            smoothed_val = round(convolve(original_tracking_data.iloc[i-half_smooth_window:i+half_smooth_window+1, inx],
+                            smoothed_val = round(convolve(original_tracking_data.iloc[i - half_smooth_window:i + half_smooth_window + 1, inx],
                                                           kernel=Gaussian1DKernel(stddev=1), nan_treatment='interpolate', preserve_nan=False)[half_smooth_window], 6)
                             changed_array[inx] = smoothed_val
                         else:
-                            if (np.isnan(original_tracking_data.iloc[i-half_smooth_window:i, inx]).all() and not np.isnan(original_tracking_data.iloc[i+1:i+half_smooth_window+1, inx]).all()) \
-                                    or (not np.isnan(original_tracking_data.iloc[i-half_smooth_window:i, inx]).all() and np.isnan(original_tracking_data.iloc[i+1:i+half_smooth_window+1, inx]).all()):
+                            if (np.isnan(original_tracking_data.iloc[i - half_smooth_window:i, inx]).all() and not np.isnan(original_tracking_data.iloc[i + 1:i + half_smooth_window + 1, inx]).all()) \
+                                    or (not np.isnan(original_tracking_data.iloc[i - half_smooth_window:i, inx]).all() and np.isnan(original_tracking_data.iloc[i + 1:i + half_smooth_window + 1, inx]).all()):
                                 changed_array[inx] = np.nan
                             else:
-                                smoothed_val = round(convolve(original_tracking_data.iloc[i-half_smooth_window:i+half_smooth_window+1, inx],
+                                smoothed_val = round(convolve(original_tracking_data.iloc[i - half_smooth_window:i + half_smooth_window + 1, inx],
                                                               kernel=Gaussian1DKernel(stddev=1), nan_treatment='interpolate', preserve_nan=False)[half_smooth_window], 6)
                                 changed_array[inx] = smoothed_val
 
@@ -273,7 +270,7 @@ class EventReader:
             with open('{}_interpolated.csv'.format(track_file[:-4]), 'r') as inp, open('{}final.csv'.format('{}_interpolated.csv'.format(track_file[:-4])[:-16]), 'w', newline='') as out:
                 writer = csv.writer(out)
                 for rowindx, row in enumerate(csv.reader(inp)):
-                    if rowindx < 7 or (all_led_frames[0]+7) <= rowindx <= (all_led_frames[-1]+7):
+                    if rowindx < 7 or (all_led_frames[0] + 7) <= rowindx <= (all_led_frames[-1] + 7):
                         writer.writerow(row)
 
         else:
@@ -339,11 +336,11 @@ class EventReader:
 
                     for indx, item in enumerate(imec_leds):
                         if indx < len(imec_leds) - sync_sequence:
-                            temp_diffs = (np.diff(imec_leds[indx:indx+sync_sequence]) + 1)
-                            if (np.absolute(temp_diffs - first_diffs) <= 30*sample_error).all():
+                            temp_diffs = (np.diff(imec_leds[indx:indx + sync_sequence]) + 1)
+                            if (np.absolute(temp_diffs - first_diffs) <= 30 * sample_error).all():
                                 print('Found first matching LED at sample number {}.'.format(item))
                                 important_led_positions.append(indx)
-                            elif (np.absolute(temp_diffs - last_diffs) <= 30*sample_error).all():
+                            elif (np.absolute(temp_diffs - last_diffs) <= 30 * sample_error).all():
                                 print('Found last matching LED at sample number {}.'.format(imec_leds[indx + sync_sequence - 1]))
                                 important_led_positions.append(indx + sync_sequence - 1)
                                 break
@@ -375,7 +372,7 @@ class EventReader:
 
                     for indx, item in enumerate(imu_leds):
                         if indx < len(imu_leds) - sync_sequence:
-                            temp_diffs = (np.diff(imu_leds[indx:indx+sync_sequence]) + 1)
+                            temp_diffs = (np.diff(imu_leds[indx:indx + sync_sequence]) + 1)
                             if (np.absolute(temp_diffs - first_diffs) <= sample_error).all():
                                 print('Found first matching LED at sample time {}.'.format(item))
                                 important_led_positions.append(indx)
@@ -417,4 +414,4 @@ class EventReader:
             with open('{}'.format(self.sync_df), 'wb') as df:
                 pickle.dump(export_sync_df, df)
 
-        print('Extraction complete! It took {:.2f} minutes.'.format((time.time() - t) / 60))
+        print('Extraction complete! It took {:.2f} minutes.'.format((time.time() - start_time) / 60))

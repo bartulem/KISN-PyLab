@@ -31,7 +31,7 @@ class Transformer:
     def csv_to_pkl(self, **kwargs):
 
         """
-        Parameters
+        Inputs
         ----------
         **kwargs: dictionary
         frame_rate : str (file path)
@@ -53,16 +53,16 @@ class Transformer:
             sys.exit()
 
         print('Working on file: {}.'.format(self.the_csv))
-        t = time.time()
+        start_time = time.time()
 
         # load empirical frame rate from file if it exists
         with open(self.sync_pkl, 'rb') as the_pkl:
             full_pkl_file = pickle.load(the_pkl)
             empirical_frame_rate = full_pkl_file.iloc[0, -1]
 
-        frame_rate = float([kwargs['frame_rate'] if 'frame_rate' in kwargs.keys() else 120. if int(round(empirical_frame_rate)) != 120 else empirical_frame_rate][0])
-        npx_sampling_rate = int([kwargs['npx_sampling_rate'] if 'npx_sampling_rate' in kwargs.keys() else 3e4][0])
-        ground_probe = int([kwargs['ground_probe'] if 'ground_probe' in kwargs.keys() else 0][0])
+        frame_rate = float(kwargs['frame_rate'] if 'frame_rate' in kwargs.keys() else 120. if int(round(empirical_frame_rate)) != 120 else empirical_frame_rate)
+        npx_sampling_rate = int(kwargs['npx_sampling_rate'] if 'npx_sampling_rate' in kwargs.keys() else 3e4)
+        ground_probe = int(kwargs['ground_probe'] if 'ground_probe' in kwargs.keys() else 0)
 
         # get tracking data from .csv
         data = []
@@ -158,4 +158,4 @@ class Transformer:
             # protocol 2 because the GUI requires it / this may change in subsequent renditions
             pickle.dump(final, f, protocol=2)
 
-        print('Conversion complete! The process took {:.2f} seconds.'.format(time.time() - t))
+        print('Conversion complete! The process took {:.2f} seconds.'.format(time.time() - start_time))

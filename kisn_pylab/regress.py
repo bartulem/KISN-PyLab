@@ -37,12 +37,18 @@ class LinRegression:
         extra_data : array
             Any additional data that requires to be predicted by the model; defaults to 0.
         ----------
+
+        Outputs
+        ----------
+        return_dict : dictionary
+            A dictionary containing test & predicted values, model slope & intercept.
+        ----------
         """
 
         xy_order = kwargs['xy_order'] if 'xy_order' in kwargs.keys() and type(kwargs['xy_order']) == list and len(kwargs['xy_order']) == 2 else [0, 1]
         extra_data = kwargs['extra_data'] if 'extra_data' in kwargs.keys() else 0
 
-        # check if the input dataframe has nans, and if so - eliminate those rows
+        # check if the input DataFrame has NANs, and if so - eliminate those rows
         if self.input_data.isnull().values.any():
             print('{} row(s) has/have NAN values and will be removed.'.format(self.input_data.isnull().any(axis=1).sum()))
             self.input_data = pd.DataFrame.dropna(self.input_data)
@@ -50,13 +56,13 @@ class LinRegression:
         split_df = {'x_train': [], 'x_test': [], 'y_train': [], 'y_test': []}
 
         # even indices are test, odd indices are train data
-        for indx in range(self.input_data.shape[0]):
-            if indx % 2 == 0:
-                split_df['x_test'].append(self.input_data.iloc[indx, xy_order[0]])
-                split_df['y_test'].append(self.input_data.iloc[indx, xy_order[1]])
+        for idx in range(self.input_data.shape[0]):
+            if idx % 2 == 0:
+                split_df['x_test'].append(self.input_data.iloc[idx, xy_order[0]])
+                split_df['y_test'].append(self.input_data.iloc[idx, xy_order[1]])
             else:
-                split_df['x_train'].append(self.input_data.iloc[indx, xy_order[0]])
-                split_df['y_train'].append(self.input_data.iloc[indx, xy_order[1]])
+                split_df['x_train'].append(self.input_data.iloc[idx, xy_order[0]])
+                split_df['y_train'].append(self.input_data.iloc[idx, xy_order[1]])
 
         regress_data = {key: np.array(val).reshape((len(val), 1)) for key, val in split_df.items()}
 

@@ -3,13 +3,15 @@
 ---------------------------------------------------------------------------------
 This repository should facilitate the data processing pipeline for e-phys, IMU and 3D tracking experiments.
 
-It is useful, in single- or multi-probe settings, for:
+It is useful, in single- or dual-probe settings, for:
 1. concatenating multiple Neuropixel recording sessions
 2. running Kilosort2 through Python
-3. reading random sync events from the Neuropixel recording, tracking and IMU files
-4. assessing whether the recording, tracking and IMU systems are synced
-5. splitting clusters back to original sessions / getting spike times
-6. converting raw tracking files to a format loadable by the lab GUI
+3. computing cluster quality measures, and separating single units and MUA
+4. reading random sync events from the Neuropixel recording, tracking and IMU files
+5. assessing whether the recording, tracking and IMU systems are synced
+6. splitting clusters back to original sessions / getting spike times
+7. converting raw tracking files to a format loadable by the lab GUI
+8. re-heading different analyses files (.mat) based on one template session
 
 Please refer to the executor notebook for further instructions.
 

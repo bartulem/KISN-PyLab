@@ -52,11 +52,19 @@ class Concat:
         cmd_prompt : boolean (0/False or 1/True)
             Run the merging through Python (0) or the command prompt (1); defaults to 1.
         nchan : int/float
-            Total number of channels on the NPX probe, for Probe3b should be 385; defaults to 385.
+            Total number of channels on the NPX probe, for probe 3B2 should be 385; defaults to 385.
         npx_sampling_rate : int/float
             The sampling rate of the NPX system; defaults to 3e4.
         file_type : str
             For spikes, choose 'ap', for LFP choose 'lf'; defaults to 'ap'.
+        ----------
+
+        Outputs
+        ----------
+        new_file_name : binary array
+            The newly created concatenated data array; saved as .bin file.
+        pkl_len : dictionary
+            Information about change-points of the concatenated sessions; saved as .pkl file.
         ----------
         """
 

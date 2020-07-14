@@ -41,11 +41,17 @@ class Sync:
         to_plot : boolean (0/False or 1/True)
             To plot or not to plot y_test and y_test_prediction scatter plot; defaults to 0.
         ground_probe : int
-            In a multi probe setting, the probe other probes are synced to; defaults to 0.
+            In a dual probe setting, the probe the other is synced to; defaults to 0.
         imu_files : list
             The list of absolute paths to imu_pkl files that contain the raw IMU data; defaults to 0.
         which_imu_time : int/float
             The IMU time to be used in the analyses, loop.starttime (0) or sample.time (1); defaults to 1.
+        ----------
+
+        Outputs
+        ----------
+        sync_df : pd.DataFrame
+            The sync data; overwritten .pkl file.
         ----------
         """
 
@@ -187,16 +193,16 @@ class Sync:
                     fig = make_subplots(rows=len(data_stream_dict.keys()), cols=2)
                     fig.update_layout(height=500*len(data_stream_dict.keys()), width=1000, plot_bgcolor='#FFFFFF', title='{}'.format(data_stream), showlegend=True)
                     fig_order = [[1, 2], [3, 4]]
-                    for indx, imec_data in enumerate(imec_data_cols):
+                    for idx, imec_data in enumerate(imec_data_cols):
                         fig.append_trace(go.Scatter(x=data_stream_dict[imec_data]['y_test'], y=data_stream_dict[imec_data]['y_test_predictions'],
-                                                    mode='markers', name='{} predictions'.format(imec_data), marker=dict(color=colors[imec_data], size=5)), row=indx+1, col=1)
-                        fig['layout']['xaxis{}'.format(fig_order[indx][0])].update(title='NPX test (s)')
-                        fig['layout']['yaxis{}'.format(fig_order[indx][0])].update(title='NPX test predictions (s)')
+                                                    mode='markers', name='{} predictions'.format(imec_data), marker=dict(color=colors[imec_data], size=5)), row=idx+1, col=1)
+                        fig['layout']['xaxis{}'.format(fig_order[idx][0])].update(title='NPX test (s)')
+                        fig['layout']['yaxis{}'.format(fig_order[idx][0])].update(title='NPX test predictions (s)')
 
                         fig.append_trace(go.Histogram(x=differences_dict[imec_data], nbinsx=15, name='{} errors'.format(imec_data),
-                                                      marker_color=colors[imec_data], opacity=.75), row=indx+1, col=2)
-                        fig['layout']['xaxis{}'.format(fig_order[indx][1])].update(title='true - predicted (ms)')
-                        fig['layout']['yaxis{}'.format(fig_order[indx][1])].update(title='count')
+                                                      marker_color=colors[imec_data], opacity=.75), row=idx+1, col=2)
+                        fig['layout']['xaxis{}'.format(fig_order[idx][1])].update(title='true - predicted (ms)')
+                        fig['layout']['yaxis{}'.format(fig_order[idx][1])].update(title='count')
                     fig.show()
 
                     if data_stream != 'tracking' and imu_files != 0:

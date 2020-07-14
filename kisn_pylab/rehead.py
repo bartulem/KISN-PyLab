@@ -6,6 +6,15 @@
 
 Re-head various tracking files according to one template file.
 
+This script brings the heading parameters from several sessions to
+a common footing by using a template heading session (ideally, a session
+where the animal moved most naturally and exhibited the best range of
+behaviors) to correct heading parameters in other comparable sessions.
+
+NB: the underlying assumption is that all sessions to be re-headed
+with the template file had the same rigid body configuration as the
+template file!
+
 """
 
 import os
@@ -15,6 +24,7 @@ import warnings
 import numpy as np
 import scipy.io
 from random import shuffle
+from tqdm import tqdm
 from scipy.optimize import minimize
 
 warnings.simplefilter('ignore')
@@ -293,25 +303,30 @@ class ReHead:
         return csys
 
     # function that runs everything
-    def conduct_the_business(self):
+    def conduct_transformations(self):
 
         # check that the files are there
         if not os.path.exists(self.template_file):
             print('Could not find file {}, try again.'.format(self.template_file))
             sys.exit()
+        else:
+            print('The template file is: {}'.format(self.template_file))
 
-        for afile in self.other_files:
+        print('The files to be re-headed are:')
+        for file_indx, afile in enumerate(self.other_files):
             if not os.path.exists(afile):
                 print('Could not find file {}, try again.'.format(afile))
                 sys.exit()
+            else:
+                print('File number {}: {}'.format(file_indx+1, afile))
 
         start_time = time.time()
-        print('Re-heading file(s), please be patient - this could take >5 minutes.')
+        print('Re-heading file(s), please be patient - this could take >10 minutes.')
 
-        # re-save original file, even though nothing changes
-        rmat, headO, headX, headZ, headpoints = self.get_points(self.template_file)
-        # new_name = '{}_notreheaded.mat'.format(self.template_file[:-4])
-        # scipy.io.savemat(new_name, rmat)
+        # change name of the original file, so it's clear it's not re-headed
+        rmat, headO, headX, headZ, headpoints = self.get_points(file_name=self.template_file)
+
+        os.rename(self.template_file, '{}_notreheaded.mat'.format(self.template_file[:-4]))
 
         reftpnts = self.get_random_timepoints_with_four_head_points(head_points=headpoints, check_point_num=300)
         refhpts = headpoints[reftpnts, :, :]
@@ -327,8 +342,8 @@ class ReHead:
         refedges = self.get_edges_between_points(hpts=refhpts)
 
         ii = 1
-        for other_file in self.other_files:
-            Omat, OheadO, OheadX, OheadZ, Oheadpoints = self.get_points(other_file)
+        for other_file in tqdm(self.other_files):
+            Omat, OheadO, OheadX, OheadZ, Oheadpoints = self.get_points(file_name=other_file)
             Otpnts = self.get_random_timepoints_with_four_head_points(head_points=Oheadpoints, check_point_num=300)
             Ohpts = Oheadpoints[Otpnts, :, :]
             bigOcsys = self.get_csys_points(hO=OheadO, hX=OheadX, hZ=OheadZ)
@@ -404,4 +419,4 @@ class ReHead:
             new_name = '{}_reheaded.mat'.format(other_file[:-4])
             scipy.io.savemat(new_name, Omat)
 
-            print('Processing complete! It took {:.2f} minute(s).'.format((time.time() - start_time) / 60))
+        print('\nProcessing complete! It took {:.2f} minute(s).'.format((time.time() - start_time) / 60))

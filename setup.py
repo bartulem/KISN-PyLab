@@ -24,5 +24,5 @@ setup(
         "Natural Language :: English",
         "Operating System :: OS Independent",
         "Programming Language :: Python",
-    ], install_requires=['pandas', 'numpy', 'tqdm', 'scipy', 'matplotlib', 'scikit-learn', 'plotly', 'astropy']
+    ], install_requires=['pandas', 'numpy', 'tqdm', 'scipy', 'matplotlib', 'scikit-learn', 'plotly', 'astropy', 'numba']
 )

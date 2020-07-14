@@ -35,6 +35,7 @@ requirements:
     - plotly
     - scikit-learn
     - astropy
+    - numba
 
 test:
   imports:

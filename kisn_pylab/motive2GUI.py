@@ -39,7 +39,15 @@ class Transformer:
         npx_sampling_rate : int/float
             The sampling rate of the NPX system; defaults to 3e4.
         ground_probe : int/float
-            The probe other probes are referenced to; defaults to 0 (as in imec0).
+            In a dual probe setting, the probe the other is synced to; defaults to 0.
+        session_timestamps : boolean (0/False or 1/True)
+            Whether to take session timestamps (0) for start/stop recording or tracking (1); defaults to 0.
+        ----------
+
+        Outputs
+        ----------
+        final : dictionary
+            A dictionary with the tracking data and other information; saved as .pkl file.
         ----------
         """
 
@@ -60,9 +68,13 @@ class Transformer:
             full_pkl_file = pickle.load(the_pkl)
             empirical_frame_rate = full_pkl_file.iloc[0, -1]
 
+        # valid values for booleans
+        valid_bools = [0, False, 1, True]
+
         frame_rate = float(kwargs['frame_rate'] if 'frame_rate' in kwargs.keys() else 120. if int(round(empirical_frame_rate)) != 120 else empirical_frame_rate)
         npx_sampling_rate = int(kwargs['npx_sampling_rate'] if 'npx_sampling_rate' in kwargs.keys() else 3e4)
         ground_probe = int(kwargs['ground_probe'] if 'ground_probe' in kwargs.keys() else 0)
+        session_timestamps = kwargs['session_timestamps'] if 'session_timestamps' in kwargs.keys() and kwargs['session_timestamps'] in valid_bools else 0
 
         # get tracking data from .csv
         data = []
@@ -76,12 +88,25 @@ class Transformer:
         frames = len(data)
 
         # get relevant imec ground probe timestamps
-        time_stamps = {'startratcamtimestamp': int(full_pkl_file.iloc[1, ground_probe]),
-                       'stopratcamtimestamp': int(full_pkl_file.iloc[-2, ground_probe]),
-                       'startsessiontimestamp': 0,
-                       'stopsessiontimestamp': int(full_pkl_file.iloc[-1, ground_probe]),
-                       'starttrackingtimestamp': int(full_pkl_file.iloc[1, ground_probe]),
-                       'stoptrackingtimestamp': int(full_pkl_file.iloc[-2, ground_probe])}
+        if session_timestamps:
+            imec_data_col = full_pkl_file.columns.tolist().index('imec{}'.format(ground_probe))
+            session_start = int(full_pkl_file.iloc[0, imec_data_col]) / npx_sampling_rate
+            tracking_start = int(full_pkl_file.iloc[1, imec_data_col]) / npx_sampling_rate
+            session_end = int(full_pkl_file.iloc[-1, imec_data_col]) / npx_sampling_rate
+            tracking_end = int(full_pkl_file.iloc[-2, imec_data_col]) / npx_sampling_rate
+        else:
+            time_data_col = full_pkl_file.columns.tolist().index('time (ms)')
+            session_start = int(full_pkl_file.iloc[1, time_data_col]) / 1e3
+            tracking_start = int(full_pkl_file.iloc[1, time_data_col]) / 1e3
+            session_end = int(full_pkl_file.iloc[-2, time_data_col]) / 1e3
+            tracking_end = int(full_pkl_file.iloc[-2, time_data_col]) / 1e3
+
+        time_stamps = {'startratcamtimestamp': tracking_start,
+                       'stopratcamtimestamp': tracking_end,
+                       'startsessiontimestamp': session_start,
+                       'stopsessiontimestamp': session_end,
+                       'starttrackingtimestamp': tracking_start,
+                       'stoptrackingtimestamp': tracking_end}
 
         # load .csv file and get labels data
         labels_dict = {'Marker1': 0, 'Marker2': 1, 'Marker3': 2, 'Marker4': 3,
@@ -120,12 +145,12 @@ class Transformer:
                                      'LED Marker 3']},
                  'boundingboxscaleX': 0,
                  'boundingboxscaleY': 0,
-                 'starttrackingtimestamp': time_stamps['starttrackingtimestamp'] / npx_sampling_rate,
-                 'stoptrackingtimestamp': time_stamps['stoptrackingtimestamp'] / npx_sampling_rate,
-                 'startsessiontimestamp': time_stamps['startsessiontimestamp'] / npx_sampling_rate,
-                 'stopsessiontimestamp': time_stamps['stopsessiontimestamp'] / npx_sampling_rate,
-                 'startratcamtimestamp': time_stamps['startratcamtimestamp'] / npx_sampling_rate,
-                 'stopratcamtimestamp': time_stamps['stopratcamtimestamp'] / npx_sampling_rate,
+                 'starttrackingtimestamp': time_stamps['starttrackingtimestamp'],
+                 'stoptrackingtimestamp': time_stamps['stoptrackingtimestamp'],
+                 'startsessiontimestamp': time_stamps['startsessiontimestamp'],
+                 'stopsessiontimestamp': time_stamps['stopsessiontimestamp'],
+                 'startratcamtimestamp': time_stamps['startratcamtimestamp'],
+                 'stopratcamtimestamp': time_stamps['stopratcamtimestamp'],
                  'boundingboxrotation': 0,
                  'headXarray': [],
                  'framerate': frame_rate,

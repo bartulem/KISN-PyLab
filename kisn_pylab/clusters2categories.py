@@ -490,18 +490,18 @@ class ClusterQuality:
         """
 
         # valid values for booleans
-        valid_bools = [0, False, 1, True]
+        valid_booleans = [0, False, 1, True]
 
         self.nchan = int(kwargs['nchan'] if 'nchan' in kwargs.keys() and (type(kwargs['nchan']) == int or type(kwargs['nchan']) == float) else 385)
         self.npx_sampling_rate = int(kwargs['npx_sampling_rate'] if 'npx_sampling_rate' in kwargs.keys() else 3e4)
-        perform_isiv = kwargs['perform_isiv'] if 'perform_isiv' in kwargs.keys() and kwargs['perform_isiv'] in valid_bools else 1
-        perform_mahalanobis = kwargs['perform_mahalanobis'] if 'perform_mahalanobis' in kwargs.keys() and kwargs['perform_mahalanobis'] in valid_bools else 1
-        perform_nnm = kwargs['perform_nnm'] if 'perform_nnm' in kwargs.keys() and kwargs['perform_nnm'] in valid_bools else 1
-        perform_lda = kwargs['perform_lda'] if 'perform_lda' in kwargs.keys() and kwargs['perform_lda'] in valid_bools else 1
-        perform_waveforms = kwargs['perform_waveforms'] if 'perform_waveforms' in kwargs.keys() and kwargs['perform_waveforms'] in valid_bools else 1
+        perform_isiv = kwargs['perform_isiv'] if 'perform_isiv' in kwargs.keys() and kwargs['perform_isiv'] in valid_booleans else 1
+        perform_mahalanobis = kwargs['perform_mahalanobis'] if 'perform_mahalanobis' in kwargs.keys() and kwargs['perform_mahalanobis'] in valid_booleans else 1
+        perform_nnm = kwargs['perform_nnm'] if 'perform_nnm' in kwargs.keys() and kwargs['perform_nnm'] in valid_booleans else 1
+        perform_lda = kwargs['perform_lda'] if 'perform_lda' in kwargs.keys() and kwargs['perform_lda'] in valid_booleans else 1
+        perform_waveforms = kwargs['perform_waveforms'] if 'perform_waveforms' in kwargs.keys() and kwargs['perform_waveforms'] in valid_booleans else 1
         num_channels_to_compare = int(kwargs['num_channels_to_compare'] if 'num_channels_to_compare' in kwargs.keys() else 13)
         max_spikes_for_cluster = int(kwargs['max_spikes_for_cluster'] if 'max_spikes_for_cluster' in kwargs.keys() else 1000)
-        re_categorize = kwargs['re_categorize'] if 're_categorize' in kwargs.keys() and kwargs['re_categorize'] in valid_bools else 1
+        re_categorize = kwargs['re_categorize'] if 're_categorize' in kwargs.keys() and kwargs['re_categorize'] in valid_booleans else 1
         min_spikes = kwargs['min_spikes'] if 'min_spikes' in kwargs.keys() and (type(kwargs['min_spikes']) == int or type(kwargs['min_spikes']) == float) else 100
         max_good_isi = kwargs['max_good_isi'] if 'max_good_isi' in kwargs.keys() and (type(kwargs['max_good_isi']) == int or type(kwargs['max_good_isi']) == float) else 2e-2
         max_good_contam = kwargs['max_good_contam'] if 'max_good_contam' in kwargs.keys() and (type(kwargs['max_good_contam']) == int or type(kwargs['max_good_contam']) == float) else 10
@@ -543,6 +543,9 @@ class ClusterQuality:
                     gc.collect()
 
                     break
+            else:
+                print('Could not find raw .bin file in this directory, try again.')
+                sys.exit()
 
             # info about cluster number and cluster type
             self.cluster_df_reduced = pd.read_csv('{}{}cluster_group.tsv'.format(self.kilosort_output_dir, os.sep), sep='\t')
@@ -572,6 +575,28 @@ class ClusterQuality:
         # create dictionary where all data is stored
         cluster_quality_dictionary = {}
 
+        # prepare dara for cluster PCs
+        if perform_mahalanobis or perform_nnm or perform_lda:
+
+            cluster_ids = np.unique(self.spike_clusters)
+            template_ids = np.unique(self.spike_templates)
+
+            template_peak_channels = np.zeros((len(template_ids),), dtype='uint16')
+            cluster_peak_channels = np.zeros((len(cluster_ids),), dtype='uint16')
+
+            for tidx, template_id in enumerate(template_ids):
+                for_template = np.squeeze(self.spike_templates == template_id)
+                pc_max = np.argmax(np.mean(self.pc_features[for_template, 0, :], 0))
+                template_peak_channels[tidx] = self.pc_feature_ind[template_id, pc_max]
+
+            for cidx, cluster_id in enumerate(cluster_ids):
+                for_unit = np.squeeze(self.spike_clusters == cluster_id)
+                templates_for_unit = np.unique(self.spike_templates[for_unit])
+                template_positions = np.where(np.isin(template_ids, templates_for_unit))[0]
+                cluster_peak_channels[cidx] = np.median(template_peak_channels[template_positions])
+
+            half_spread = int((num_channels_to_compare - 1) / 2)
+
         # convert spike sample times to seconds
         for idx, unit_id in enumerate(tqdm(self.cluster_df.loc[:, 'id'])):
 
@@ -586,6 +611,7 @@ class ClusterQuality:
             # the quantity that Kilosort2 thresholds to find the spikes in the first place.
 
             cluster_quality_dictionary[unit_id] = {'KS_label': self.cluster_df.loc[idx, 'KSLabel'],
+                                                   'Phy_label': self.cluster_df.loc[idx, 'group'],
                                                    'isi_violations': np.nan,
                                                    'mahalanobis_metrics': [np.nan, np.nan],
                                                    'nn_metrics': [np.nan, np.nan],
@@ -615,27 +641,8 @@ class ClusterQuality:
 
                 if perform_mahalanobis or perform_nnm or perform_lda:
 
-                    cluster_ids = np.unique(self.spike_clusters)
-                    template_ids = np.unique(self.spike_templates)
-
-                    template_peak_channels = np.zeros((len(template_ids),), dtype='uint16')
-                    cluster_peak_channels = np.zeros((len(cluster_ids),), dtype='uint16')
-
-                    for idx, template_id in enumerate(template_ids):
-                        for_template = np.squeeze(self.spike_templates == template_id)
-                        pc_max = np.argmax(np.mean(self.pc_features[for_template, 0, :], 0))
-                        template_peak_channels[idx] = self.pc_feature_ind[template_id, pc_max]
-
-                    for idx, cluster_id in enumerate(cluster_ids):
-                        for_unit = np.squeeze(self.spike_clusters == cluster_id)
-                        templates_for_unit = np.unique(self.spike_templates[for_unit])
-                        template_positions = np.where(np.isin(template_ids, templates_for_unit))[0]
-                        cluster_peak_channels[idx] = np.median(template_peak_channels[template_positions])
-
-                    half_spread = int((num_channels_to_compare - 1) / 2)
-
                     peak_channel = cluster_peak_channels[idx]
-                    num_spikes_in_cluster = np.sum(self.spike_clusters == idx)
+                    num_spikes_in_cluster = np.sum(self.spike_clusters == unit_id)
 
                     half_spread_down = peak_channel \
                         if peak_channel < half_spread \

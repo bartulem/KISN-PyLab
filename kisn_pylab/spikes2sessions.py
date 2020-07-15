@@ -306,17 +306,21 @@ class ExtractSpikes:
                 mua_count = 0
                 duplicates = {}
                 for acell in probe_spike_data.keys():
-                    if len(probe_spike_data[acell]['session_{}'.format(session + 1)]) > min_spikes:
-                        cluster_data = np.array(probe_spike_data[acell]['session_{}'.format(session + 1)])
+
+                    # eliminate duplicates
+                    cluster_data = np.array(probe_spike_data[acell]['session_{}'.format(session + 1)])
+                    if switch_clock:
+                        frame_data = np.array(probe_spike_frame_data[acell]['session_{}'.format(session + 1)])
+                    if eliminate_duplicates:
+                        duplicate_spikes = np.where(np.diff(cluster_data) <= min_isi)[0]
+                        cluster_data = np.delete(cluster_data, duplicate_spikes + 1)
                         if switch_clock:
-                            frame_data = np.array(probe_spike_frame_data[acell]['session_{}'.format(session + 1)])
-                        if eliminate_duplicates:
-                            duplicate_spikes = np.where(np.diff(cluster_data) <= min_isi)[0]
-                            cluster_data = np.delete(cluster_data, duplicate_spikes + 1)
-                            if switch_clock:
-                                frame_data = np.delete(frame_data, duplicate_spikes + 1)
-                            if len(duplicate_spikes) > 0:
-                                duplicates[acell] = len(duplicate_spikes)
+                            frame_data = np.delete(frame_data, duplicate_spikes + 1)
+                        if len(duplicate_spikes) > 0:
+                            duplicates[acell] = len(duplicate_spikes)
+
+                    # eliminate clusters below minimum number of spikes
+                    if len(cluster_data) > min_spikes:
                         if switch_clock:
                             sio.savemat(path + os.sep + acell + '.mat', {'cellTS': cluster_data, 'cellFS': frame_data}, oned_as='column')
                         else:

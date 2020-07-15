@@ -419,4 +419,4 @@ class ReHead:
             new_name = '{}_reheaded.mat'.format(other_file[:-4])
             scipy.io.savemat(new_name, Omat)
 
-        print('\nProcessing complete! It took {:.2f} minute(s).'.format((time.time() - start_time) / 60))
+        print('\nProcessing complete! It took {:.2f} minute(s).\n'.format((time.time() - start_time) / 60))

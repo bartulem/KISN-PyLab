@@ -183,4 +183,4 @@ class Transformer:
             # protocol 2 because the GUI requires it / this may change in subsequent renditions
             pickle.dump(final, f, protocol=2)
 
-        print('Conversion complete! The process took {:.2f} seconds.'.format(time.time() - start_time))
+        print('Conversion complete! The process took {:.2f} seconds.\n'.format(time.time() - start_time))

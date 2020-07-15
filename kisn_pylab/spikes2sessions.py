@@ -352,4 +352,4 @@ class ExtractSpikes:
             with io.open('{}{}cluster_groups_information.json'.format(self.the_dirs[0], os.sep), 'w', encoding='utf-8') as cgi_file:
                 cgi_file.write(json.dumps(cluster_groups_info, ensure_ascii=False, indent=4))
 
-        print('Processing complete! It took {:.2f} minute(s).'.format((time.time() - start_time) / 60))
+        print('Processing complete! It took {:.2f} minute(s).\n'.format((time.time() - start_time) / 60))

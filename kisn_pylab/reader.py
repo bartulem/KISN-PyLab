@@ -519,4 +519,4 @@ class EventReader:
             with open('{}'.format(self.sync_df), 'wb') as df:
                 pickle.dump(export_sync_df, df)
 
-        print('Extraction complete! It took {:.2f} minutes.'.format((time.time() - start_time) / 60))
+        print('Extraction complete! It took {:.2f} minutes.\n'.format((time.time() - start_time) / 60))

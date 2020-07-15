@@ -722,4 +722,4 @@ class ClusterQuality:
             self.cluster_df_reduced.to_csv('{}{}cluster_group.tsv'.format(self.kilosort_output_dir, os.sep), index=False, sep='\t')
             self.cluster_df.to_csv('{}{}cluster_info.tsv'.format(self.kilosort_output_dir, os.sep), index=False, sep='\t')
 
-        print('\nCluster quality analysis complete! It took {:.2f} hours.'.format((time.time() - start_time) / 3600))
+        print('\nCluster quality analysis complete! It took {:.2f} hours.\n'.format((time.time() - start_time) / 3600))

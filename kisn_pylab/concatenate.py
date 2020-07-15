@@ -183,4 +183,4 @@ class Concat:
             # outsource command
             os.system('cmd /c "{}"'.format(command))
 
-        print('Concatenation complete! It took {:.2f} minutes.'.format((time.time() - start_time) / 60))
+        print('Concatenation complete! It took {:.2f} minutes.\n'.format((time.time() - start_time) / 60))

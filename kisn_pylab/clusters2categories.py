@@ -596,7 +596,7 @@ class ClusterQuality:
                                                    'waveform_metrics': [np.nan, np.nan, np.nan, np.nan],
                                                    'new_label': 'noise'}
 
-            if self.cluster_df.loc[idx, 'KSLabel'] != 'noise':
+            if self.cluster_df.loc[idx, 'group'] != 'noise':
 
                 # get spiking array in seconds
                 cluster_indices = np.where(self.spike_clusters == self.cluster_df.loc[idx, 'id'])[0]

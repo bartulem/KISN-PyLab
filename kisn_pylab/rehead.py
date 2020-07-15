@@ -11,7 +11,7 @@ a common footing by using a template heading session (ideally, a session
 where the animal moved most naturally and exhibited the best range of
 behaviors) to correct heading parameters in other comparable sessions.
 
-NB: the underlying assumption is that all sessions to be re-headed
+! NB: the underlying assumption is that all sessions to be re-headed
 with the template file had the same rigid body configuration as the
 template file!
 

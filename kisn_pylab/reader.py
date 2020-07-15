@@ -12,15 +12,15 @@ for every channel, then the second sample was written for every channel, etc. Ne
 Neuropixel ADCs are 10 bits, with a range of -0.6 to 0.6 V, and acquisition was at 500x gain, yielding a resolution of 2.34 µV/bit.
 To obtain readings in µV, you should multiply the int16 values by 2.34.
 
-This script has the purpose of extracting LEDon sync events from three independent data streams: (1) NPX recording files (may be one or
+This script has the purpose of extracting LEDon sync events from four independent data streams: (1) NPX recording files (may be one or
 two in a given session, depending on the number of probes), (2) the exported Motive tracking file, and (3) the IMU sensor file,
-all of which keep track of the LEDon occurrences. Unlike v2.0.0, future versions will assume the LED pulses are generated continuously
-and randomly (by default with a fixed 250ms duration, and 250-1500ms IPIs).
+(4) the sync IPI generator, all of which keep track of the LEDon occurrences. Unlike v2.0.0, future versions will assume the LED
+pulses are generated continuously and randomly (by default with a fixed 250ms duration, and 250-1500ms IPIs).
 
 The code first goes through all of those files and picks up the LED events, (taking into account that the LED signal jitters,
 which can be probe independent). It then selects a portion of the starting and ending LED pulses in the tracking data stream
 (10 by default) and tries to match these templates in the other data streams, aligning the start and end of tracking to different
-recordings. All the corresponding LED events in all data streams are stored in a dataframe, which is saved to a separate
+recordings. All the corresponding LED events in all data streams are stored in a DataFrame, which is saved to a separate
 binary .pkl file. This code might consume a lot of RAM (64Gb should be enough in most cases).
 
 """

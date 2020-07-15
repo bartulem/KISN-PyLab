@@ -15,14 +15,14 @@ works well for smaller files (<10 Gb) as they need to be loaded into memory (I r
 at least 64 Gb RAM), (2) through the CMD prompt/terminal (recommended) which works well for
 larger files (>10 Gb) as it does not require a lot of memory. The end result of the process
 is a large .bin file (concatenated recorded files) and a smaller binary .pkl file which stores
-the lengths of individual sessions (in terms of samples) and their changepoints in the newly
+the lengths of individual sessions (in terms of samples) and their change-points in the newly
 created concatenated file.
 
-NB: If you are concatenating e.g. three sessions, you may want to consider giving them the same name
+! NB: If you are concatenating e.g. three sessions, you may want to consider giving them the same name
 with the 's1', 's2' and 's3' abbreviation as the distinctive factor because your input is the
 directory where the files are, so you don't specify the order the files should be concatenated in.
 However, if you use the same name with 's1', 's2' and 's3' being the difference, the code will
-set the order right. The script prints the order of the to-be-concatenated files, so pay attention.
+set the order right. The script prints the order of the to-be-concatenated files, so pay attention!
 
 """
 

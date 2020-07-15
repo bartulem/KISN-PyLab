@@ -56,9 +56,9 @@ class Sync:
         """
 
         # valid values for booleans
-        valid_bools = [0, False, 1, True]
+        valid_booleans = [0, False, 1, True]
 
-        to_plot = kwargs['to_plot'] if 'to_plot' in kwargs.keys() and kwargs['to_plot'] in valid_bools else 0
+        to_plot = kwargs['to_plot'] if 'to_plot' in kwargs.keys() and kwargs['to_plot'] in valid_booleans else 0
         npx_sampling_rate = float(kwargs['npx_sampling_rate'] if 'npx_sampling_rate' in kwargs.keys() else 3e4)
         ground_probe = int(kwargs['ground_probe'] if 'ground_probe' in kwargs.keys() else 0)
         imu_files = kwargs['imu_files'] if 'imu_files' in kwargs.keys() and type(kwargs['imu_files']) == list else 0

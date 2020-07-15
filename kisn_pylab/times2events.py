@@ -63,12 +63,11 @@ class AssignTimes:
 
         # eliminate events before 1st and after last LED onset
         # this means there are no more spikes before or after tracking
-        self.event_data = self.event_data[(self.event_data > first_led_samples) & (self.event_data < last_led_samples)]
+        self.event_data = self.event_data[(self.event_data > first_led_samples)
+                                          & (self.event_data < last_led_samples)]
 
-        # create new array for event times
+        # create new array for event times/frames
         new_event_times = np.zeros(len(self.event_data))
-
-        # create new array for event frames
         new_event_frames = np.zeros(len(self.event_data))
 
         for idx, spike in enumerate(self.event_data):
@@ -101,7 +100,8 @@ class AssignTimes:
 
                         # calculate spike time/frame
                         spike_time = lower_bound_time + (total_time_between / total_samples_between) * samples_to_spike
-                        spike_frame = (lower_bound_frames - self.sync_data.iloc[1, frame_data_col]) + int(round((total_frames_between / total_samples_between) * samples_to_spike))
+                        spike_frame = (lower_bound_frames - self.sync_data.iloc[1, frame_data_col]) + \
+                                      int(round((total_frames_between / total_samples_between) * samples_to_spike))
 
                         # save results converted to seconds/frames to array
                         new_event_times[idx] = spike_time / 1e3

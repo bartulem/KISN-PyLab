@@ -41,7 +41,7 @@ class Transformer:
         ground_probe : int/float
             In a dual probe setting, the probe the other is synced to; defaults to 0.
         session_timestamps : boolean (0/False or 1/True)
-            Whether to take session timestamps (0) for start/stop recording or tracking (1); defaults to 0.
+            Whether to take session timestamps (1) for start/stop recording or tracking (0); defaults to 1.
         ----------
 
         Outputs
@@ -69,12 +69,12 @@ class Transformer:
             empirical_frame_rate = full_pkl_file.iloc[0, -1]
 
         # valid values for booleans
-        valid_bools = [0, False, 1, True]
+        valid_booleans = [0, False, 1, True]
 
         frame_rate = float(kwargs['frame_rate'] if 'frame_rate' in kwargs.keys() else 120. if int(round(empirical_frame_rate)) != 120 else empirical_frame_rate)
         npx_sampling_rate = int(kwargs['npx_sampling_rate'] if 'npx_sampling_rate' in kwargs.keys() else 3e4)
         ground_probe = int(kwargs['ground_probe'] if 'ground_probe' in kwargs.keys() else 0)
-        session_timestamps = kwargs['session_timestamps'] if 'session_timestamps' in kwargs.keys() and kwargs['session_timestamps'] in valid_bools else 0
+        session_timestamps = kwargs['session_timestamps'] if 'session_timestamps' in kwargs.keys() and kwargs['session_timestamps'] in valid_booleans else 1
 
         # get tracking data from .csv
         data = []

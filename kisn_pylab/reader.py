@@ -86,7 +86,7 @@ class EventReader:
         Outputs
         ----------
         track_file : csv object
-            The corrected and LED-shortened tracing data; saved as a separate .csv file.
+            The corrected and LED-shortened tracking data; saved as a separate .csv file.
         imu_file : pd.DataFrame
             The IMU data; saved as .pkl file.
         sync_df : pd.DataFrame
@@ -165,7 +165,7 @@ class EventReader:
             probe_sync = []
             counter_on = 0
             probe_sync.append(0)
-            for inxSync, itemSync in tqdm(enumerate(sync_data)):
+            for inxSync, itemSync in enumerate(tqdm(sync_data)):
                 if 0 < inxSync < len(sync_data) - imec_check_samples \
                         and itemSync == high_val and sync_data[inxSync - 1] == low_val \
                         and (sync_data[max(0, inxSync - imec_check_samples):inxSync] != high_val).all() \
@@ -349,7 +349,7 @@ class EventReader:
             teensy_time = []
             imu_led = []
             imu_on = 0
-            for idx, item in tqdm(enumerate(led_array)):
+            for idx, item in enumerate(tqdm(led_array)):
                 if idx > 0 and item != 0 and led_array[idx - 1] == 0:
                     imu_led.append(idx)
                     teensy_time.append(sample_array[idx])

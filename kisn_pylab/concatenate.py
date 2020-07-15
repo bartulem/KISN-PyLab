@@ -74,9 +74,9 @@ class Concat:
             sys.exit()
 
         # valid values for booleans
-        valid_bools = [0, False, 1, True]
+        valid_booleans = [0, False, 1, True]
 
-        cmd_prompt = kwargs['cmd_prompt'] if 'cmd_prompt' in kwargs.keys() and kwargs['cmd_prompt'] in valid_bools else 1
+        cmd_prompt = kwargs['cmd_prompt'] if 'cmd_prompt' in kwargs.keys() and kwargs['cmd_prompt'] in valid_booleans else 1
         nchan = int(kwargs['nchan'] if 'nchan' in kwargs.keys() and (type(kwargs['nchan']) == int or type(kwargs['nchan']) == float) else 385)
         npx_sampling_rate = float(kwargs['npx_sampling_rate'] if 'npx_sampling_rate' in kwargs.keys() else 3e4)
         file_type = kwargs['file_type'] if 'file_type' in kwargs.keys() and (kwargs['file_type'] == 'ap' or kwargs['file_type'] == 'lf') else 'ap'
@@ -126,7 +126,9 @@ class Concat:
         with open('{}'.format(self.pkl_len), 'wb') as save_dict:
             pickle.dump(file_lengths, save_dict)
 
+        # concatenate
         print('Concatenating files, please be patient - this could take >1 hour.')
+
         start_time = time.time()
 
         if not cmd_prompt:

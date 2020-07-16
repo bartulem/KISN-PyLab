@@ -4,9 +4,9 @@
 
 @author: bartulem
 
-Concatenate NPX sessions into one file for running Kilosort2.
+Concatenate NPX recordings (ap|lf) into one .bin file.
 
-This script should be run if multiple sessions need to be merged before running Kilosort2.
+This script should be run if multiple sessions need to be merged (before running Kilosort2).
 The primary reason for merging is the desire to keep the same cell IDs across the recorded
 sessions. It should be said that there are other (less intuitive) ways to preserve cell IDs
 and that merging is not always a good idea (e.g. if the sessions are separated by many hours).
@@ -18,7 +18,7 @@ is a large .bin file (concatenated recorded files) and a smaller binary .pkl fil
 the lengths of individual sessions (in terms of samples) and their change-points in the newly
 created concatenated file.
 
-! NB: If you are concatenating e.g. three sessions, you may want to consider giving them the same name
+!NB: If you are concatenating e.g. three sessions, you may want to consider giving them the same name
 with the 's1', 's2' and 's3' abbreviation as the distinctive factor because your input is the
 directory where the files are, so you don't specify the order the files should be concatenated in.
 However, if you use the same name with 's1', 's2' and 's3' being the difference, the code will

@@ -4,10 +4,10 @@
 
 @author: bartulem
 
-Compute cluster quality measures for 'good' and 'MUA' clusters.
+Compute cluster quality measures for 'good' and 'mua' clusters.
 
 This script computes various cluster quality measures for clusters
-labeled as 'good' or 'MUA' in the cluster_info.tsv file. Measures include
+labeled as 'good' or 'mua' in the cluster_info.tsv file. Measures include
 various waveform metrics (SNR, spike duration, FWHM, PT-ratio), cluster
 isolation metrics (Mahalanobis distance, nearest neighbor and LDA distances)
 and ISI violation rates (with functions largely inherited from the Allen Institute
@@ -15,7 +15,7 @@ GitHub repo).
 
 The results of the computations are stored in a separate .json file in the
 same directory as the Kilosort2 results, and if desirable, one can set a
-criterion to separate 'good' units from 'MUA' such that the cluster_info.tsv
+criterion to separate 'good' units from 'mua' such that the cluster_info.tsv
 and cluster_group.tsv files are changed accordingly.
 
 """
@@ -625,7 +625,7 @@ class ClusterQuality:
             if self.cluster_df.loc[idx, 'group'] != 'noise':
 
                 # get spiking array in seconds
-                cluster_indices = np.where(self.spike_clusters == self.cluster_df.loc[idx, 'id'])[0]
+                cluster_indices = np.where(self.spike_clusters == unit_id)[0]
                 spikes = np.take(self.spike_times, cluster_indices)
                 spikes_seconds = spikes / self.npx_sampling_rate
 

@@ -52,6 +52,10 @@ class AssignTimes:
 
         probe_id = int(kwargs['probe_id'] if 'probe_id' in kwargs.keys() else 0)
 
+        # convert event_data to array form
+        if type(self.event_data) != np.ndarray:
+            self.event_data = np.array(self.event_data)
+
         # find data columns
         imec_data_col = self.sync_data.columns.tolist().index('imec{}'.format(probe_id))
         time_data_col = self.sync_data.columns.tolist().index('time (ms)')

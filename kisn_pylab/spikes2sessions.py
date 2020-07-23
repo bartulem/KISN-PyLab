@@ -31,6 +31,7 @@ import scipy.io as sio
 import pickle
 from kisn_pylab import regress
 from kisn_pylab import times2events
+from tqdm import tqdm
 from plotly.subplots import make_subplots
 import plotly.graph_objects as go
 
@@ -147,11 +148,19 @@ class ExtractSpikes:
         print('Splitting clusters to individual sessions, please be patient - this could '
               'take awhile (depending on the number of sessions and clusters).')
 
+        # give it a 1s break
+        time.sleep(1)
+
         # create dictionary which would store information about cluster groups
         cluster_groups_info = {}
 
         # get spikes from every good/mua cluster and save them as spike times according to each session/tracking start
         for probe in spike_dict.keys():
+
+            print('Working on {} clusters.'.format(probe))
+
+            # give it a 1s break
+            time.sleep(2)
 
             # each probe gets a place in the cluster groups information dictionary
             cluster_groups_info[probe] = {category: [] for category in important_cluster_groups}
@@ -171,7 +180,7 @@ class ExtractSpikes:
                 # load change-points for different sessions
                 file_lengths = spike_dict[probe]['file_lengths']
 
-            for idx in range(cluster_info.shape[0]):
+            for idx in tqdm(range(cluster_info.shape[0])):
 
                 # filter only non-noise clusters
                 if cluster_info.loc[idx, 'group'] in important_cluster_groups:
@@ -197,20 +206,18 @@ class ExtractSpikes:
                         frames_dict = {'session_{}'.format(x + 1): [] for x in range(len(file_lengths.keys()) - 1)}
                         spikes_dict = {'session_{}'.format(x + 1): [] for x in range(len(file_lengths.keys()) - 1)}
                         for aspike in spikes_all:
-                            truth = True
-                            while truth:
-                                for xx in range(len(file_lengths.keys()) - 1):
-                                    lower_bound = file_lengths['total_len_changepoints'][xx] // nchan
-                                    upper_bound = file_lengths['total_len_changepoints'][xx + 1] // nchan
-                                    if lower_bound <= aspike < upper_bound:
-                                        if switch_clock:
-                                            spikes_dict['session_{}'.format(xx + 1)].append(aspike - lower_bound)
+                            for xx in range(len(file_lengths.keys()) - 1):
+                                lower_bound = file_lengths['total_len_changepoints'][xx] // nchan
+                                upper_bound = file_lengths['total_len_changepoints'][xx + 1] // nchan
+                                if lower_bound <= aspike < upper_bound:
+                                    if switch_clock:
+                                        spikes_dict['session_{}'.format(xx + 1)].append(aspike - lower_bound)
+                                    else:
+                                        if probe_id == ground_probe:
+                                            spikes_dict['session_{}'.format(xx + 1)].append((aspike - lower_bound) / npx_sampling_rate)
                                         else:
-                                            if probe_id == ground_probe:
-                                                spikes_dict['session_{}'.format(xx + 1)].append((aspike - lower_bound) / npx_sampling_rate)
-                                            else:
-                                                spikes_dict['session_{}'.format(xx + 1)].append(aspike - lower_bound)
-                                        truth = False
+                                            spikes_dict['session_{}'.format(xx + 1)].append(aspike - lower_bound)
+                                    break
 
                     for sessionidx, asession in enumerate(spikes_dict.keys()):
 
@@ -220,8 +227,12 @@ class ExtractSpikes:
 
                         # put all spikes on sync pulse generator time
                         if switch_clock:
-                            ttsClass = times2events.AssignTimes(sync_data=full_session_df, event_data=spikes_dict['session_{}'.format(sessionidx + 1)])
-                            spikes_dict['session_{}'.format(sessionidx + 1)], frames_dict['session_{}'.format(sessionidx + 1)] = ttsClass.times_to_events(probe_id=probe_id)
+                            spikes_dict['session_{}'.format(sessionidx + 1)], \
+                            frames_dict['session_{}'.format(sessionidx + 1)] = times2events.times_to_events(sync_data=full_session_df.to_numpy(dtype=np.float64),
+                                                                                                            event_data=np.array(spikes_dict['session_{}'.format(sessionidx + 1)]),
+                                                                                                            imec_data_col=full_session_df.columns.tolist().index('imec{}'.format(probe_id)),
+                                                                                                            time_data_col=full_session_df.columns.tolist().index('time (ms)'),
+                                                                                                            frame_data_col=full_session_df.columns.tolist().index('tracking'))
 
                         # regress other probe to ground_probe time
                         else:
@@ -234,7 +245,7 @@ class ExtractSpikes:
 
                                 # regress
                                 regress_session_class = regress.LinRegression(reduced_session_df)
-                                regression_session_dict = regress_session_class.split_train_test_and_regress(xy_order=[probe_id, 1-probe_id],
+                                regression_session_dict = regress_session_class.split_train_test_and_regress(xy_order=[probe_id, 1 - probe_id],
                                                                                                              extra_data=np.array(spikes_dict['session_{}'.format(sessionidx + 1)]))
 
                                 # prepare arrays for plotting and check if the transformation is acceptable

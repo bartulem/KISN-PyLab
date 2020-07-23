@@ -22,95 +22,88 @@ That works in the following way:
 """
 
 import numpy as np
+from numba import njit
 
 
-class AssignTimes:
+@njit(parallel=False)
+def times_to_events(sync_data,
+                    event_data,
+                    imec_data_col,
+                    time_data_col,
+                    frame_data_col):
 
-    # initializer / instance attributes
-    def __init__(self, sync_data, event_data):
-        self.sync_data = sync_data
-        self.event_data = event_data
+    """
+    Inputs
+    ----------
+    sync_data : np.ndarray
+        The sync data; necessary input.
+    event_data : np.ndarray
+        The spike train; necessary input.
+    imec_data_col : int
+        IMEC column in the sync DataFrame; necessary input.
+    time_data_col : int
+        IPI time column in the sync DataFrame; necessary input.
+    frame_data_col : int
+        Tracking column in the sync DataFrame; necessary input.
+    ----------
 
-    def times_to_events(self, **kwargs):
+    Outputs
+    ----------
+    new_event_times : np.ndarray
+        An array with spike times converted to the synce pulse clock.
+    new_event_frames : np.ndarray
+        An array with spike frames adjusted to the synce pulse clock.
+    ----------
+    """
 
-        """
-        Inputs
-        ----------
-        **kwargs: dictionary
-        probe_id : int
-            The ID of the imec probe the event_data was recorded on; defaults to 0.
-        ----------
+    # get first and last imec LEDs
+    first_led_samples = sync_data[1, imec_data_col]
+    last_led_samples = sync_data[-2, imec_data_col]
 
-        Outputs
-        ----------
-        new_event_times : np.ndarray
-            An array with spike times converted to the synce pulse clock.
-        new_event_frames : np.ndarray
-            An array with spike frames adjusted to the synce pulse clock.
-        ----------
-        """
+    # eliminate events before 1st and after last LED onset
+    # this means there are no more spikes before or after tracking
+    event_data = event_data[(event_data > first_led_samples) & (event_data < last_led_samples)]
 
-        probe_id = int(kwargs['probe_id'] if 'probe_id' in kwargs.keys() else 0)
+    # create new array for event times
+    new_event_times = np.zeros(len(event_data))
+    new_event_frames = np.zeros(len(event_data), dtype=np.int64)
 
-        # convert event_data to array form
-        if type(self.event_data) != np.ndarray:
-            self.event_data = np.array(self.event_data)
+    for idx, spike in enumerate(event_data):
 
-        # find data columns
-        imec_data_col = self.sync_data.columns.tolist().index('imec{}'.format(probe_id))
-        time_data_col = self.sync_data.columns.tolist().index('time (ms)')
-        frame_data_col = self.sync_data.columns.tolist().index('tracking')
+        for xx in range(1, sync_data.shape[0] - 2):
 
-        # get first and last imec LEDs
-        first_led_samples = self.sync_data.iloc[1, imec_data_col]
-        last_led_samples = self.sync_data.iloc[-2, imec_data_col]
+            # find bounding LED events in samples
+            lower_bound_samples = sync_data[xx, imec_data_col]
+            upper_bound_samples = sync_data[xx + 1, imec_data_col]
 
-        # eliminate events before 1st and after last LED onset
-        # this means there are no more spikes before or after tracking
-        self.event_data = self.event_data[(self.event_data > first_led_samples)
-                                          & (self.event_data < last_led_samples)]
+            if lower_bound_samples <= spike < upper_bound_samples:
 
-        # create new array for event times/frames
-        new_event_times = np.zeros(len(self.event_data))
-        new_event_frames = np.zeros(len(self.event_data))
+                # find bounding LED events in sync time and frames
+                lower_bound_time = sync_data[xx, time_data_col]
+                upper_bound_time = sync_data[xx + 1, time_data_col]
 
-        for idx, spike in enumerate(self.event_data):
-            truth = True
-            while truth:
-                for xx in range(1, self.sync_data.shape[0] - 2):
+                lower_bound_frames = sync_data[xx, frame_data_col]
+                upper_bound_frames = sync_data[xx + 1, frame_data_col]
 
-                    # find bounding LED events in samples
-                    lower_bound_samples = self.sync_data.iloc[xx, imec_data_col]
-                    upper_bound_samples = self.sync_data.iloc[xx + 1, imec_data_col]
+                # get total number of samples between two bounding LED events
+                total_samples_between = upper_bound_samples - lower_bound_samples
 
-                    if lower_bound_samples <= spike < upper_bound_samples:
+                # samples between spike and lower bound led
+                samples_to_spike = spike - lower_bound_samples + 1
 
-                        # find bounding LED events in sync time and frames
-                        lower_bound_time = self.sync_data.iloc[xx, time_data_col]
-                        upper_bound_time = self.sync_data.iloc[xx + 1, time_data_col]
+                # get total time/frames between two bounding LED events
+                total_time_between = upper_bound_time - lower_bound_time
+                total_frames_between = upper_bound_frames - lower_bound_frames
 
-                        lower_bound_frames = self.sync_data.iloc[xx, frame_data_col]
-                        upper_bound_frames = self.sync_data.iloc[xx + 1, frame_data_col]
+                # calculate spike time/frame
+                spike_time = lower_bound_time + (total_time_between / total_samples_between) * samples_to_spike
+                spike_frame = (lower_bound_frames - sync_data[1, frame_data_col]) + \
+                              int(round((total_frames_between / total_samples_between) * samples_to_spike))
 
-                        # get total number of samples between two bounding LED events
-                        total_samples_between = upper_bound_samples - lower_bound_samples
+                # save results converted to seconds/frames to array
+                new_event_times[idx] = spike_time / 1e3
+                new_event_frames[idx] = spike_frame
 
-                        # samples between spike and lower bound led
-                        samples_to_spike = spike - lower_bound_samples + 1
+                break
 
-                        # get total time/frames between two bounding LED events
-                        total_time_between = upper_bound_time - lower_bound_time
-                        total_frames_between = upper_bound_frames - lower_bound_frames
-
-                        # calculate spike time/frame
-                        spike_time = lower_bound_time + (total_time_between / total_samples_between) * samples_to_spike
-                        spike_frame = (lower_bound_frames - self.sync_data.iloc[1, frame_data_col]) + \
-                                      int(round((total_frames_between / total_samples_between) * samples_to_spike))
-
-                        # save results converted to seconds/frames to array
-                        new_event_times[idx] = spike_time / 1e3
-                        new_event_frames[idx] = spike_frame
-
-                        truth = False
-
-        return new_event_times, new_event_frames
+    return new_event_times, new_event_frames

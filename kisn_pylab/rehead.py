@@ -24,7 +24,7 @@ import warnings
 import numpy as np
 import scipy.io
 from random import shuffle
-from tqdm import tqdm
+from tqdm.notebook import tqdm
 from scipy.optimize import minimize
 
 warnings.simplefilter('ignore')
@@ -419,4 +419,4 @@ class ReHead:
             new_name = '{}_reheaded.mat'.format(other_file[:-4])
             scipy.io.savemat(new_name, Omat)
 
-        print('\nProcessing complete! It took {:.2f} minute(s).\n'.format((time.time() - start_time) / 60))
+        print('Processing complete! It took {:.2f} minute(s).\n'.format((time.time() - start_time) / 60))

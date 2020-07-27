@@ -31,7 +31,7 @@ import scipy.io as sio
 import pickle
 from kisn_pylab import regress
 from kisn_pylab import times2events
-from tqdm import tqdm
+from tqdm.notebook import tqdm
 from plotly.subplots import make_subplots
 import plotly.graph_objects as go
 

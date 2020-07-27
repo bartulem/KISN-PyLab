@@ -28,13 +28,13 @@ binary .pkl file. This code might consume a lot of RAM (64Gb should be enough in
 import os
 import sys
 import numpy as np
-from tqdm import tqdm
 import gc
 import time
 import csv
 import pandas as pd
 import pickle
 from collections import Counter
+from tqdm.notebook import tqdm
 import operator
 import warnings
 warnings.simplefilter('ignore')

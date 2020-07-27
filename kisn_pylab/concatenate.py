@@ -29,7 +29,7 @@ set the order right. The script prints the order of the to-be-concatenated files
 import os
 import sys
 import numpy as np
-from tqdm import tqdm
+from tqdm.notebook import tqdm
 import time
 import gc
 import pickle

@@ -28,7 +28,7 @@ import pandas as pd
 import json
 import io
 import time
-from tqdm import tqdm
+from tqdm.notebook import tqdm
 from scipy.spatial.distance import cdist
 from scipy.stats import chi2
 from sklearn.neighbors import NearestNeighbors

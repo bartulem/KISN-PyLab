@@ -11,7 +11,7 @@ It is useful, in single- or dual-probe settings, for:
 5. assessing whether the recording, tracking and IMU systems are synced
 6. splitting clusters back to original sessions / getting spike times
 7. converting raw tracking files to a format loadable by the lab GUI
-8. re-heading different analyses files (.mat) based on one template session
+8. re-heading different analyses (.mat) files based on one template session
 
 Please refer to the executor notebook for further instructions.
 

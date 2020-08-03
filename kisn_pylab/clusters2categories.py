@@ -11,7 +11,7 @@ labeled as 'good' or 'mua' in the cluster_info.tsv file. Measures include
 various waveform metrics (SNR, spike duration, FWHM, PT-ratio), cluster
 isolation metrics (Mahalanobis distance, nearest neighbor and LDA distances)
 and ISI violation rates (with functions largely inherited from the Allen Institute
-GitHub repo).
+GitHub repository).
 
 The results of the computations are stored in a separate .json file in the
 same directory as the Kilosort2 results, and if desirable, one can set a
@@ -325,6 +325,10 @@ class ClusterQuality:
                                           pcs_for_other_units,
                                           'mahalanobis', VI=VI)[0])
 
+        mahalanobis_self = np.sort(cdist(mean_value,
+                                         pcs_for_this_unit,
+                                         'mahalanobis', VI=VI)[0])
+
         # number of spikes
         n = np.min([pcs_for_this_unit.shape[0], pcs_for_other_units.shape[0]])
 
@@ -333,7 +337,7 @@ class ClusterQuality:
             # number of features
             dof = pcs_for_this_unit.shape[1]
 
-            l_ratio = np.sum(1 - chi2.cdf(pow(mahalanobis_other, 2), dof)) / mahalanobis_other.shape[0]
+            l_ratio = np.sum(1 - chi2.cdf(pow(mahalanobis_other, 2), dof)) / mahalanobis_self.shape[0]
             isolation_distance = pow(mahalanobis_other[n - 1], 2)
 
         else:
@@ -347,7 +351,7 @@ class ClusterQuality:
     def nearest_neighbors_metrics(self, input_dict):
 
         """
-        Metrics described in Chung, Magland et al. (2017) Neuron 95: 1381-1394;
+        Metrics described in Chung, et al. (2017) Neuron 95: 1381-1394;
         adapted from https://github.com/AllenInstitute/ecephys_spike_sorting
 
         Inputs:
@@ -439,7 +443,7 @@ class ClusterQuality:
         flda_other_cluster = X_flda[np.where(np.invert(y))[0]]
 
         d_prime = (np.mean(flda_this_cluster) - np.mean(flda_other_cluster)) / \
-                  np.sqrt(0.5 * (np.std(flda_this_cluster) ** 2 + np.std(flda_other_cluster) ** 2))
+                   np.sqrt(0.5 * (np.std(flda_this_cluster) ** 2 + np.std(flda_other_cluster) ** 2))
 
         return d_prime
 
@@ -533,7 +537,7 @@ class ClusterQuality:
                 if 'bin' in afile:
                     npx_recording = np.memmap('{}{}{}'.format(self.kilosort_output_dir, os.sep, afile),
                                               mode='r', dtype=np.int16, order='C')
-                    self.npx_samples = len(npx_recording) // self.nchan
+                    self.npx_samples = npx_recording.shape[0] // self.nchan
 
                     # reshape the array such that channels are rows and samples are columns
                     self.raw_data = npx_recording.reshape((self.nchan, self.npx_samples), order='F')
@@ -720,12 +724,11 @@ class ClusterQuality:
                         self.cluster_df.loc[idx, 'group'] = 'noise'
                         self.cluster_df_reduced.loc[idx, 'group'] = 'noise'
 
-        # save cluster_quality_dictionary
-        with io.open('{}{}cluster_quality_measures.json'.format(self.kilosort_output_dir, os.sep), 'w', encoding='utf-8') as to_save_file:
-            to_save_file.write(json.dumps(cluster_quality_dictionary, ensure_ascii=False, indent=4))
-
-        # over-write existing .tsv files
+        # save cluster_quality_dictionary & over-write existing .tsv files
         if re_categorize:
+            with io.open('{}{}cluster_quality_measures.json'.format(self.kilosort_output_dir, os.sep), 'w', encoding='utf-8') as to_save_file:
+                to_save_file.write(json.dumps(cluster_quality_dictionary, ensure_ascii=False, indent=4))
+
             self.cluster_df_reduced.to_csv('{}{}cluster_group.tsv'.format(self.kilosort_output_dir, os.sep), index=False, sep='\t')
             self.cluster_df.to_csv('{}{}cluster_info.tsv'.format(self.kilosort_output_dir, os.sep), index=False, sep='\t')
 

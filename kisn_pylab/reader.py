@@ -130,7 +130,7 @@ class EventReader:
             npx_recording = np.memmap(anpxfile, mode='r', dtype=np.int16, order='C')
 
             # integer divide the length of the recording by channel count to get number of samples
-            npx_samples = len(npx_recording) // nchan
+            npx_samples = npx_recording.shape[0] // nchan
 
             # reshape the array such that channels are rows and samples are columns
             npx_recording = npx_recording.reshape((nchan, npx_samples), order='F')

@@ -121,7 +121,7 @@ class Transformer:
             elif albaelind % 3 == 0 and 'LED' in alabel:
                 labels.append(labels_dict['LED{}'.format(alabel.split(':')[-1][-1])])
 
-        # get the final output dict ready (num_of_markers is the number of points, 5 is X, Y, Z, label, nans)
+        # get the final output dict ready (num_of_markers is the number of points, 5 is big_x, Y, Z, label, nans)
         final = {'points': [[[] for i in range(5)] for j in range(num_of_markers)],
                  'pointlabels': {0: ['cyan',
                                      'first head'],
@@ -161,13 +161,11 @@ class Transformer:
                  'boundingboxtransY': 0}
 
         # put everything in its place and deal with the nans
-        coordinates_order = [0, 2, 1]
+        coordinates_order = [2, 0, 1]
         for i in range(num_of_markers):
-            tt = 0
-            for j in coordinates_order:
-                X = [x[2 + 3 * i + j] for x in data]
-                final['points'][i][tt] = ([(float(x) if x else -1000000) for x in X])
-                tt = tt + 1
+            for jdx, j in enumerate(coordinates_order):
+                big_x = [x[2 + 3 * i + j] for x in data]
+                final['points'][i][jdx] = ([float(x) if x else -1000000 for x in big_x])
             final['points'][i][3] = [labels[i]] * frames
             final['points'][i][4] = [0.0] * frames
 

@@ -7,13 +7,14 @@ It is useful, in single- or dual-probe settings, for:
 1. concatenating multiple Neuropixel recording sessions
 2. running Kilosort2 through Python
 3. computing cluster quality measures, and separating single units and MUA
-4. reading random sync events from the Neuropixel recording, tracking and IMU files
-5. assessing whether the recording, tracking and IMU systems are synced
-6. splitting clusters back to original sessions / getting spike times
-7. converting raw tracking files to a format loadable by the lab GUI
-8. re-heading different analyses (.mat) files based on one template session
+4. locating the surface recording channel
+5. reading random sync events from the Neuropixel recording, tracking and IMU files
+6. assessing whether the recording, tracking and IMU systems are synced
+7. splitting clusters back to original sessions / getting spike times
+8. converting raw tracking files to a format loadable by the lab GUI
+9. re-heading different analyses (.mat) files based on one template session
 
-Please refer to the executor notebook for further instructions.
+Please refer to the **executor notebook** for further instructions.
 
 ### Installation
 ---------------------------------------------------------------------------------
@@ -37,7 +38,7 @@ activate lab
 ~~~bash
 conda install -c bartulem kisn_pylab
 ~~~
-Confirm with 'Y' that you want to install this package. This should work on most platforms. Let me know if it doesn't. 
+Confirm with 'Y' that you want to install this package. This should work on 64-bit platforms. Let me know if it doesn't. 
 
 ##### Github
 If you have `git`, you can simply clone the KISN-PyLab repository with `git clone https://github.com/bartulem/KISN-PyLab.git`. Otherwise, you can download the compressed file to your computer, depending on the OS. 

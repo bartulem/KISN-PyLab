@@ -146,10 +146,7 @@ class ExtractSpikes:
         start_time = time.time()
 
         print('Splitting clusters to individual sessions, please be patient - this could '
-              'take awhile (depending on the number of sessions and clusters).')
-
-        # give it a 1s break
-        time.sleep(1)
+              'take awhile (depending on the number of sessions and clusters).\n')
 
         # create dictionary which would store information about cluster groups
         cluster_groups_info = {}
@@ -157,10 +154,7 @@ class ExtractSpikes:
         # get spikes from every good/mua cluster and save them as spike times according to each session/tracking start
         for probe in spike_dict.keys():
 
-            print('Working on {} clusters.'.format(probe))
-
-            # give it a 1s break
-            time.sleep(2)
+            print('Working on {} clusters.\n'.format(probe))
 
             # each probe gets a place in the cluster groups information dictionary
             cluster_groups_info[probe] = {category: [] for category in important_cluster_groups}

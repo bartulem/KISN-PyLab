@@ -115,16 +115,13 @@ class EventReader:
                 sys.exit()
 
         start_time = time.time()
-        print('Extracting sync data from NPX file(s), please be patient - this could take >5 minutes.')
+        print('Extracting sync data from NPX file(s), please be patient - this could take >5 minutes.\n')
 
         # initialize dictionary to store the data in
         sync_dict = {}
 
         # extract LED events from the NPX file(s)
         for anpxfile in self.npx_files:
-
-            # give it a 2s break
-            time.sleep(2)
 
             # memory maps are used for accessing small segments of large files on disk, without reading the entire file into memory.
             npx_recording = np.memmap(anpxfile, mode='r', dtype=np.int16, order='C')
@@ -192,6 +189,7 @@ class EventReader:
                 for rowindx, row in enumerate(csv.reader(thecsv, delimiter=',')):
                     if rowindx == 3:
                         columnofint = next(indx for indx, obj in enumerate(row) if 'LED' in obj)
+                        break
 
             # correct fully empty frames / this warrants a more detailed explanation
             # tracking files, for some reason, sometimes get frames where all markers drop out. This happens
@@ -215,10 +213,7 @@ class EventReader:
             original_tracking_data = pd.read_csv(track_file, sep=',', skiprows=6)
             total_frame_number = original_tracking_data.shape[0]
 
-            print('Correcting empty frames.')
-
-            # give it a 2s break
-            time.sleep(2)
+            print('Correcting empty frames.\n')
 
             corrected_frames = {}
             for i in tqdm(range(total_frame_number - 1)):
@@ -292,10 +287,7 @@ class EventReader:
             tracking_on = 1
             all_led_frames = []
 
-            print('Looking for LED events in the corrected tracking file.')
-
-            # give it a 2s break
-            time.sleep(2)
+            print('Looking for LED events in the corrected tracking file.\n')
 
             for row in tqdm(range(tracking_data.shape[0])):
                 if row > 0 and not tracking_data.iloc[row, columnofint:(columnofint + 9)].isnull().values.all() \
@@ -326,10 +318,7 @@ class EventReader:
         # extract LED events from the IMU file
         if os.path.exists(imu_file):
 
-            print('Extracting sync data from the IMU file, please remain patient.')
-
-            # give it a 2s break
-            time.sleep(2)
+            print('Extracting sync data from the IMU file, please remain patient.\n')
 
             # load the files as df
             imu_df = pd.read_csv(imu_file, sep=',', header=None)

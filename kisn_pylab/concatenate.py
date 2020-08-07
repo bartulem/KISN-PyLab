@@ -114,9 +114,9 @@ class Concat:
                 file_lengths['total_len_changepoints'].append(npx_recording.shape[0] + file_lengths['total_len_changepoints'][-1])
 
             print('Found file: {} with total length {}, '
-                  'or {} samples, or {} minutes.'.format(npx_file, npx_recording.shape[0],
-                                                         npx_recording.shape[0] // nchan,
-                                                         round(npx_recording.shape[0] // nchan / (npx_sampling_rate*60), 2)))
+                  'or {} samples, or {} minutes.\n'.format(npx_file, npx_recording.shape[0],
+                                                           npx_recording.shape[0] // nchan,
+                                                           round(npx_recording.shape[0] // nchan / (npx_sampling_rate*60), 2)))
 
             # delete the map object from memory
             del npx_recording
@@ -141,11 +141,8 @@ class Concat:
             concatenated_file = np.memmap(self.new_file_name, dtype=np.int16, mode='r+', shape=(new_array_total_len,), order='C')
 
             print('The concatenated file has total length of {}, '
-                  'or {} samples, or {} minutes.'.format(concatenated_file.shape[0], concatenated_file.shape[0] // nchan,
-                                                         round(concatenated_file.shape[0] // nchan / (npx_sampling_rate*60), 2)))
-
-            # give it a 1s break
-            time.sleep(1)
+                  'or {} samples, or {} minutes.\n'.format(concatenated_file.shape[0], concatenated_file.shape[0] // nchan,
+                                                           round(concatenated_file.shape[0] // nchan / (npx_sampling_rate*60), 2)))
 
             # fill it with data
             counter = 0
@@ -167,9 +164,6 @@ class Concat:
             gc.collect()
 
         else:
-
-            # give it a 1s break
-            time.sleep(1)
 
             # get all files in a command
             command = 'copy /b '

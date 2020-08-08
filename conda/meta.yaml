@@ -37,6 +37,10 @@ requirements:
     - astropy
     - numba
 
+build:
+  always_include_files:
+    - kisn_pylab/executor.ipynb
+
 test:
   imports:
     - kisn_pylab

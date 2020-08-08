@@ -33,7 +33,6 @@ from scipy.spatial.distance import cdist
 from scipy.stats import chi2
 from sklearn.neighbors import NearestNeighbors
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis as LDA
-from numba import jit
 import pickle
 import warnings
 
@@ -171,7 +170,6 @@ class ClusterQuality:
         return [snr, waveform_duration / 30, fwhm / 30, pt_ratio]
 
     # get PC features for one cluster
-    @jit
     def get_cluster_pcs(self, input_dict):
 
         """
@@ -230,7 +228,6 @@ class ClusterQuality:
             return None
 
     # compute inter-spike-interval violations
-    @jit
     def isi_violations(self, input_dict):
 
         """
@@ -283,7 +280,6 @@ class ClusterQuality:
         return fp_rate
 
     # get distance to nearest cluster in Mahalanobis space
-    @jit
     def mahalanobis_metrics(self, input_dict):
 
         """
@@ -347,7 +343,6 @@ class ClusterQuality:
         return [isolation_distance, l_ratio]
 
     # calculates unit contamination based on NearestNeighbors search in PCA space
-    @jit
     def nearest_neighbors_metrics(self, input_dict):
 
         """
@@ -406,7 +401,7 @@ class ClusterQuality:
 
         return [hit_rate, miss_rate]
 
-    @jit
+    # calculates cluster separation on Fisher's linear discriminant
     def lda_metric(self, input_dict):
 
         """
@@ -474,6 +469,8 @@ class ClusterQuality:
             Yey or ney on the LDA metric; defaults to 1.
         re_categorize : boolean (0/False or 1/True)
             Yey or ney on re-categorizing clusters based on contamination features; defaults to 1.
+        save_quality_measures : boolean (0/False or 1/True)
+            Yey or ney on saving the cluster_quality_measures.json file; defaults to 1.
         min_spikes : int/float
             The minimum number of spikes a cluster should have to be saved; defaults to 100.
         max_good_isi : int/float
@@ -506,6 +503,7 @@ class ClusterQuality:
         num_channels_to_compare = int(kwargs['num_channels_to_compare'] if 'num_channels_to_compare' in kwargs.keys() else 13)
         max_spikes_for_cluster = int(kwargs['max_spikes_for_cluster'] if 'max_spikes_for_cluster' in kwargs.keys() else 1000)
         re_categorize = kwargs['re_categorize'] if 're_categorize' in kwargs.keys() and kwargs['re_categorize'] in valid_booleans else 1
+        save_quality_measures = kwargs['save_quality_measures'] if 'save_quality_measures' in kwargs.keys() and kwargs['save_quality_measures'] in valid_booleans else 1
         min_spikes = kwargs['min_spikes'] if 'min_spikes' in kwargs.keys() and (type(kwargs['min_spikes']) == int or type(kwargs['min_spikes']) == float) else 100
         max_good_isi = kwargs['max_good_isi'] if 'max_good_isi' in kwargs.keys() and (type(kwargs['max_good_isi']) == int or type(kwargs['max_good_isi']) == float) else 2e-2
         max_good_contam = kwargs['max_good_contam'] if 'max_good_contam' in kwargs.keys() and (type(kwargs['max_good_contam']) == int or type(kwargs['max_good_contam']) == float) else 10
@@ -725,10 +723,11 @@ class ClusterQuality:
                         self.cluster_df_reduced.loc[idx, 'group'] = 'noise'
 
         # save cluster_quality_dictionary & over-write existing .tsv files
-        if re_categorize:
+        if save_quality_measures:
             with io.open('{}{}cluster_quality_measures.json'.format(self.kilosort_output_dir, os.sep), 'w', encoding='utf-8') as to_save_file:
                 to_save_file.write(json.dumps(cluster_quality_dictionary, ensure_ascii=False, indent=4))
 
+        if re_categorize:
             self.cluster_df_reduced.to_csv('{}{}cluster_group.tsv'.format(self.kilosort_output_dir, os.sep), index=False, sep='\t')
             self.cluster_df.to_csv('{}{}cluster_info.tsv'.format(self.kilosort_output_dir, os.sep), index=False, sep='\t')
 

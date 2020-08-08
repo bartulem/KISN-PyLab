@@ -19,6 +19,7 @@ import sys
 import csv
 import time
 import pickle
+import numpy as np
 
 
 class Transformer:
@@ -71,7 +72,7 @@ class Transformer:
         # valid values for booleans
         valid_booleans = [0, False, 1, True]
 
-        frame_rate = float(kwargs['frame_rate'] if 'frame_rate' in kwargs.keys() else 120. if int(round(empirical_frame_rate)) != 120 else empirical_frame_rate)
+        frame_rate = float(kwargs['frame_rate'] if 'frame_rate' in kwargs.keys() else 120. if (np.isnan(empirical_frame_rate) or int(round(empirical_frame_rate)) != 120) else empirical_frame_rate)
         npx_sampling_rate = int(kwargs['npx_sampling_rate'] if 'npx_sampling_rate' in kwargs.keys() else 3e4)
         ground_probe = int(kwargs['ground_probe'] if 'ground_probe' in kwargs.keys() else 0)
         session_timestamps = kwargs['session_timestamps'] if 'session_timestamps' in kwargs.keys() and kwargs['session_timestamps'] in valid_booleans else 1

@@ -33,6 +33,7 @@ from scipy.spatial.distance import cdist
 from scipy.stats import chi2
 from sklearn.neighbors import NearestNeighbors
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis as LDA
+from numba import jit
 import pickle
 import warnings
 
@@ -47,11 +48,13 @@ class ClusterQuality:
     def __init__(self, kilosort_output_dir):
         self.kilosort_output_dir = kilosort_output_dir
 
-    # get spike waveforms
+    @jit
     def get_waveforms(self, input_dict):
 
         """
-        adapted from https://github.com/AllenInstitute/ecephys_spike_sorting
+        Gets spike waveform features.
+
+        Adapted from https://github.com/AllenInstitute/ecephys_spike_sorting
 
         Inputs
         ----------
@@ -76,14 +79,14 @@ class ClusterQuality:
 
         Outputs
         ----------
-        output : list
-            snr : float
+        output : dictionary
+            'snr' : float
                 Ratio between peak-through span and the waveform SD.
-            waveform_duration : float
+            'waveform_duration' : float
                 The time difference between peak and through (in ms).
-            fwhm : float
+            'fwhm' : float
                 The full spike width at half maximum (in ms).
-            pt_ratio : float
+            'pt_ratio' : float
                 The ratio between peak and through.
         ----------
         """
@@ -167,13 +170,18 @@ class ClusterQuality:
         # get peak-to-trough ratio
         pt_ratio = np.abs(mean_waveform[peak_indx] / mean_waveform[trough_indx])
 
-        return [snr, waveform_duration / 30, fwhm / 30, pt_ratio]
+        return {'snr': snr,
+                'waveform_duration': waveform_duration / 30,
+                'fwhm': fwhm / 30,
+                'pt_ratio': pt_ratio}
 
-    # get PC features for one cluster
+    @jit
     def get_cluster_pcs(self, input_dict):
 
         """
-        adapted from https://github.com/AllenInstitute/ecephys_spike_sorting
+        Gets PC features for a given cluster.
+
+        Adapted from https://github.com/AllenInstitute/ecephys_spike_sorting
 
         Inputs
         ----------
@@ -227,10 +235,12 @@ class ClusterQuality:
         else:
             return None
 
-    # compute inter-spike-interval violations
+    @jit
     def isi_violations(self, input_dict):
 
         """
+        Computes inter-spike-interval violations.
+
         Metric described in Hill et al. (2011) J. Neurosci. 31: 8699-8705;
         adapted from https://github.com/AllenInstitute/ecephys_spike_sorting
 
@@ -279,10 +289,12 @@ class ClusterQuality:
 
         return fp_rate
 
-    # get distance to nearest cluster in Mahalanobis space
+    @jit
     def mahalanobis_metrics(self, input_dict):
 
         """
+        Calculates L-ratio and isolation distance in Mahalanobis space.
+
         Metrics described in Schmitzer-Torbert et al. (2005) Neurosci. 131: 1-11;
         adapted from https://github.com/AllenInstitute/ecephys_spike_sorting
 
@@ -295,10 +307,10 @@ class ClusterQuality:
 
         Outputs
         ----------
-        output : list
-            isolation_distance : float
+        output : dictionary
+            'isolation_distance' : float
                 Isolation distance of a given unit.
-            l_ratio : float
+            'l_ratio' : float
                 L-ratio for a given unit.
         ----------
         """
@@ -340,12 +352,15 @@ class ClusterQuality:
             l_ratio = np.nan
             isolation_distance = np.nan
 
-        return [isolation_distance, l_ratio]
+        return {'isolation_distance': isolation_distance,
+                'l_ratio': l_ratio}
 
-    # calculates unit contamination based on NearestNeighbors search in PCA space
+    @jit
     def nearest_neighbors_metrics(self, input_dict):
 
         """
+        Calculates unit contamination based on nearest neighbors search in PC space.
+
         Metrics described in Chung, et al. (2017) Neuron 95: 1381-1394;
         adapted from https://github.com/AllenInstitute/ecephys_spike_sorting
 
@@ -362,10 +377,10 @@ class ClusterQuality:
 
         Outputs
         ----------
-        output : list
-            hit_rate : float
+        output : dictionary
+            'hit_rate' : float
                 Fraction of neighbors for target cluster that are also in target cluster.
-            miss_rate : float
+            'miss_rate' : float
                 Fraction of neighbors outside target cluster that are in target cluster.
         ----------
         """
@@ -399,12 +414,15 @@ class ClusterQuality:
         # fraction of neighbors outside target cluster that are in target cluster
         miss_rate = np.mean(other_cluster_nearest < n)
 
-        return [hit_rate, miss_rate]
+        return {'hit_rate': hit_rate,
+                'miss_rate': miss_rate}
 
-    # calculates cluster separation on Fisher's linear discriminant
+    @jit
     def lda_metric(self, input_dict):
 
         """
+        Calculates cluster separation on Fisher's linear discriminant.
+
         Metric described in Hill et al. (2011) J. Neurosci. 31: 8699-8705;
         adapted from https://github.com/AllenInstitute/ecephys_spike_sorting
 
@@ -442,10 +460,11 @@ class ClusterQuality:
 
         return d_prime
 
-    # # # compute cluster quality measures and separate good units/MUA
     def compute_quality_measures(self, **kwargs):
 
         """
+        Computes cluster quality measures to separate good units/MUA.
+
         Inputs
         ----------
         **kwargs: dictionary
@@ -615,13 +634,18 @@ class ClusterQuality:
             cluster_quality_dictionary[unit_id] = {'KS_label': self.cluster_df.loc[idx, 'KSLabel'],
                                                    'Phy_label': self.cluster_df.loc[idx, 'group'],
                                                    'isi_violations': np.nan,
-                                                   'mahalanobis_metrics': [np.nan, np.nan],
-                                                   'nn_metrics': [np.nan, np.nan],
+                                                   'mahalanobis_metrics': {'isolation_distance': np.nan,
+                                                                           'l_ratio': np.nan},
+                                                   'nn_metrics': {'hit_rate': np.nan,
+                                                                  'miss_rate': np.nan},
                                                    'lda_metric': np.nan,
                                                    'ContamPct': self.cluster_df.loc[idx, 'ContamPct'],
                                                    'Amplitude': self.cluster_df.loc[idx, 'Amplitude'],
                                                    'amp': self.cluster_df.loc[idx, 'amp'],
-                                                   'waveform_metrics': [np.nan, np.nan, np.nan, np.nan],
+                                                   'waveform_metrics': {'snr': np.nan,
+                                                                        'waveform_duration': np.nan,
+                                                                        'fwhm': np.nan,
+                                                                        'pt_ratio': np.nan},
                                                    'new_label': 'noise'}
 
             if self.cluster_df.loc[idx, 'group'] != 'noise':

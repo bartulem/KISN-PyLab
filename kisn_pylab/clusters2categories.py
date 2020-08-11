@@ -33,7 +33,6 @@ from scipy.spatial.distance import cdist
 from scipy.stats import chi2
 from sklearn.neighbors import NearestNeighbors
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis as LDA
-from numba import jit
 import pickle
 import warnings
 
@@ -48,7 +47,6 @@ class ClusterQuality:
     def __init__(self, kilosort_output_dir):
         self.kilosort_output_dir = kilosort_output_dir
 
-    @jit
     def get_waveforms(self, input_dict):
 
         """
@@ -175,7 +173,6 @@ class ClusterQuality:
                 'fwhm': fwhm / 30,
                 'pt_ratio': pt_ratio}
 
-    @jit
     def get_cluster_pcs(self, input_dict):
 
         """
@@ -235,7 +232,6 @@ class ClusterQuality:
         else:
             return None
 
-    @jit
     def isi_violations(self, input_dict):
 
         """
@@ -289,7 +285,6 @@ class ClusterQuality:
 
         return fp_rate
 
-    @jit
     def mahalanobis_metrics(self, input_dict):
 
         """
@@ -355,7 +350,6 @@ class ClusterQuality:
         return {'isolation_distance': isolation_distance,
                 'l_ratio': l_ratio}
 
-    @jit
     def nearest_neighbors_metrics(self, input_dict):
 
         """
@@ -417,7 +411,6 @@ class ClusterQuality:
         return {'hit_rate': hit_rate,
                 'miss_rate': miss_rate}
 
-    @jit
     def lda_metric(self, input_dict):
 
         """

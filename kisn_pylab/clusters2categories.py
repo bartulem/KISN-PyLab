@@ -439,7 +439,6 @@ class ClusterQuality:
 
         y = np.zeros((X.shape[0],), dtype='bool')
         y[self.all_labels == unit_id] = True
-        # print(this_unit_id, X.shape)
 
         lda = LDA(n_components=1)
 

@@ -69,7 +69,7 @@ class EventReader:
             The possible error in the duration of ON time for sync LEDs; defaults to 50 (ms).
         ground_probe : int
             In a dual probe setting, the probe the other is synced to; defaults to 0.
-        frame_rate : str (file path)
+        frame_rate : int/float
             The tracking camera frame rate for that session; defaults to 120.
         npx_sampling_rate : int/float
             The sampling rate of the NPX system; defaults to 3e4.

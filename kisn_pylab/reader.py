@@ -132,9 +132,6 @@ class EventReader:
             # reshape the array such that channels are rows and samples are columns
             npx_recording = npx_recording.reshape((nchan, npx_samples), order='F')
 
-            # get the sync data in a separate array, this is a burden on the system memory
-            sync_data = npx_recording[sync_chan - 1, :]
-
             # find sync events and collect them in a dict / this warrants a more detailed explanation
             # the sync channel consists of 16 1-bit channels, and when its values are read as np.int16 they can assume
             # different values such as 0, 64, 128, 132, etc. (to be converted back to binary, use np.binary_repr(num, 16)).
@@ -144,10 +141,10 @@ class EventReader:
             # (250ms * 30) but for different reasons may last less and might include jitter values (128, 132, etc.),
             # so in screening for LED events that is taken into account.
 
-            counter = sorted(dict(Counter(sync_data)).items(), key=operator.itemgetter(1), reverse=True)
+            counter = sorted(dict(Counter(npx_recording[sync_chan - 1, :])).items(), key=operator.itemgetter(1), reverse=True)
             most_freq_two_values = [counter[0][0], counter[1][0]]
 
-            session_proportion = (counter[0][1] + counter[1][1]) / len(sync_data)
+            session_proportion = (counter[0][1] + counter[1][1]) / npx_samples
             if session_proportion < .99:
                 print('The two most dominant values, {} and {} appear together only {:.3f} of the total session, '
                       'so something is wrong. Check it out!'.format(counter[0][0], counter[1][0], session_proportion))
@@ -162,14 +159,14 @@ class EventReader:
             probe_sync = []
             counter_on = 0
             probe_sync.append(0)
-            for inxSync, itemSync in enumerate(tqdm(sync_data)):
-                if 0 < inxSync < len(sync_data) - imec_check_samples \
-                        and itemSync == high_val and sync_data[inxSync - 1] == low_val \
-                        and (sync_data[max(0, inxSync - imec_check_samples):inxSync] != high_val).all() \
-                        and (sync_data[(inxSync + 1):(inxSync + imec_check_samples + 1)] != low_val).all():
+            for inxSync, itemSync in enumerate(tqdm(npx_recording[sync_chan - 1, :])):
+                if 0 < inxSync < npx_samples - imec_check_samples \
+                        and itemSync == high_val and npx_recording[sync_chan - 1, inxSync - 1] == low_val \
+                        and (npx_recording[sync_chan - 1, max(0, inxSync - imec_check_samples):inxSync] != high_val).all() \
+                        and (npx_recording[sync_chan - 1, (inxSync + 1):(inxSync + imec_check_samples + 1)] != low_val).all():
                     probe_sync.append(inxSync)
                     counter_on += 1
-            probe_sync.append(len(sync_data))
+            probe_sync.append(npx_samples)
 
             # delete the map object from memory
             del npx_recording

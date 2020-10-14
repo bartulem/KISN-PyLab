@@ -27,8 +27,8 @@ import time
 import warnings
 import numpy as np
 import scipy.io
-from random import shuffle
-# import random
+# from random import shuffle
+import random
 from itertools import permutations
 from tqdm.notebook import tqdm
 from scipy.optimize import minimize
@@ -83,14 +83,16 @@ class ReHead:
         sorted_point_data = np.empty((frame_number, point_number, 3))
         sorted_point_data[:] = np.nan
         for t in np.arange(frame_number):
-            for j in np.arange(pdd[0]):
+            # sorted_point_data[t, point_data[:, 3, t].astype(int), :] = point_data[:, :3, t]
+            for j in np.arange(point_number):
                 for k in np.arange(point_number):
-                    if point_data[j, :, t][3] == k:
-                        sorted_point_data[t, k, :] = point_data[j, :, t][0:3]
+                    if point_data[j, 3, t] == k:
+                        sorted_point_data[t, k, :] = point_data[j, :3, t]
 
-        return mat_file, head_origin, headX, headZ, sorted_point_data
+        return mat_file, head_origin, headX, headZ, sorted_point_data, point_data
 
-    def floor_correction(self, sorted_point_data, head_x, head_z, head_origin):
+    def floor_correction(self, sorted_point_data, head_x, head_z, head_origin, point_data):
+        pdd = np.shape(point_data)
         butt_point = sorted_point_data[:, 6, :]
         butt_point = butt_point[~np.isnan(butt_point[:, 0]), :]
         nframe = len(butt_point)
@@ -118,14 +120,15 @@ class ReHead:
         vz = vz / np.linalg.norm(vz)
 
         floor_rot_mat = np.column_stack([vx, vy, vz]).transpose()
-        shpae_points = np.shape(sorted_point_data)
-        sorted_point_data_new = np.zeros(shpae_points)
+        shape_points = np.shape(sorted_point_data)
+        sorted_point_data_new = np.zeros(shape_points)
         sorted_point_data_new[:] = np.nan
-        for t in np.arange(shpae_points[0]):
-            for k in np.arange(shpae_points[1]):
-                if (np.isnan(sorted_point_data[t, k, 0])):
-                    continue
-                sorted_point_data_new[t, k, :] = floor_rot_mat.dot(sorted_point_data[t, k, :])
+        for t in np.arange(shape_points[0]):
+            # for k in np.arange(shape_points[1]):
+            # if (np.isnan(sorted_point_data[t, k, 0])):
+            #     continue
+            # sorted_point_data_new[t, :, :] = floor_rot_mat.dot(sorted_point_data[t, k, :])
+            sorted_point_data_new[t, :, :] = floor_rot_mat.dot(sorted_point_data[t, :, :].transpose()).transpose()
 
         da = np.nanmedian(sorted_point_data_new[:, 7, 2])
         db = np.nanmedian(sorted_point_data_new[:, 8, 2])
@@ -135,15 +138,15 @@ class ReHead:
 
         sorted_point_data_new[:, :, 2] = sorted_point_data_new[:, :, 2] - led_offset
 
-        new_rot_mat = np.zeros((shpae_points[0], 3, 3))
+        new_rot_mat = np.zeros((shape_points[0], 3, 3))
         new_rot_mat[:] = np.nan
-        new_head_x = np.zeros((shpae_points[0], 3))
+        new_head_x = np.zeros((shape_points[0], 3))
         new_head_x[:] = np.nan
-        new_head_z = np.zeros((shpae_points[0], 3))
+        new_head_z = np.zeros((shape_points[0], 3))
         new_head_z[:] = np.nan
-        new_head_origin = np.zeros((shpae_points[0], 3))
+        new_head_origin = np.zeros((shape_points[0], 3))
         new_head_origin[:] = np.nan
-        for t in range(shpae_points[0]):
+        for t in range(shape_points[0]):
             if (~np.isnan(head_x[t, 0])):
                 hx = head_x[t] / np.linalg.norm(head_x[t])
                 hz = head_z[t] / np.linalg.norm(head_z[t])
@@ -154,7 +157,19 @@ class ReHead:
                 new_head_z[t] = new_rot_mat[t, 2, :]
                 new_head_origin[t] = np.dot(floor_rot_mat, head_origin[t])
 
-        return floor_rot_mat, sorted_point_data_new, new_head_x, new_head_z, new_head_origin
+        point_number = 10  # NOTE THERE ARE MORE POINTS BUT WE DO NOT CARE ABOUT THEM
+        new_point_data = point_data.copy()
+
+        for t in np.arange(shape_points[0]):
+            for j in np.arange(shape_points[1]):
+                for k in np.arange(shape_points[1]):
+                    if point_data[j, 3, t] == k:
+                        new_point_data[j, :3, t] = sorted_point_data[t, k, :]
+
+        new_point_data = np.reshape(new_point_data, (1, pdd[0] * pdd[1] * pdd[2]))
+        new_point_data[np.isnan(new_point_data)] = -1.00000e+06
+
+        return floor_rot_mat, sorted_point_data_new, new_head_x, new_head_z, new_head_origin, new_point_data
 
     # get a random subset of head data and check how infested it is with NANs
     def get_random_timepoints_with_four_head_points(self, head_points, check_point_num):
@@ -166,28 +181,28 @@ class ReHead:
             The number of points to estimate things with; should be minimally 300.
         ----------
         """
-        # n_frames = len(head_points)
-        # reshape_hps = np.reshape(head_points, (n_frames, 12))
-        # total_non_nan_indices = np.where(np.sum(np.isnan(reshape_hps), axis=1) == 0)[0].tolist()
-        # non_nan_indices = np.unique(random.choices(total_non_nan_indices, k=10*check_point_num))
-        # if len(non_nan_indices) < check_point_num:
-        #     print('There are more NANs in the test data than not!')
-        #     sys.exit()
-        # non_nan_indices = non_nan_indices[0:300]
-        total_frame_num = len(head_points[:, 0, 0])
-        time_points = list(range(total_frame_num))
-        shuffle(time_points)
-
-        non_nan_indices = []
-        for i in range(10 * check_point_num):
-            if np.sum(np.ravel(np.isnan(head_points[time_points[i], :, :]))) < 1:
-                non_nan_indices.append(time_points[i])
-                if len(non_nan_indices) >= check_point_num:
-                    break
-
+        n_frames = len(head_points)
+        reshape_hps = np.reshape(head_points, (n_frames, 12))
+        total_non_nan_indices = np.where(np.sum(np.isnan(reshape_hps), axis=1) == 0)[0].tolist()
+        non_nan_indices = np.unique(random.choices(total_non_nan_indices, k=10 * check_point_num))
         if len(non_nan_indices) < check_point_num:
             print('There are more NANs in the test data than not!')
             sys.exit()
+        non_nan_indices = non_nan_indices[:check_point_num]
+        # total_frame_num = len(head_points[:, 0, 0])
+        # time_points = list(range(total_frame_num))
+        # shuffle(time_points)
+        #
+        # non_nan_indices = []
+        # for i in range(10 * check_point_num):
+        #     if np.sum(np.ravel(np.isnan(head_points[time_points[i], :, :]))) < 1:
+        #         non_nan_indices.append(time_points[i])
+        #         if len(non_nan_indices) >= check_point_num:
+        #             break
+        #
+        # if len(non_nan_indices) < check_point_num:
+        #     print('There are more NANs in the test data than not!')
+        #     sys.exit()
 
         return non_nan_indices
 
@@ -410,10 +425,26 @@ class ReHead:
         print('Re-heading file(s), please be patient - this could take >10 minutes.')
 
         # change name of the original file, so it's clear it's not re-headed
-        rmat, headO, headX, headZ, sorted_point_data = self.get_points(file_name=self.template_file)
+        rmat, headO, headX, headZ, sorted_point_data, point_data = self.get_points(file_name=self.template_file)
+        floor_rot_mat_temp, sorted_point_data_new_temp, new_head_x_temp, new_head_z_temp, new_head_origin_temp, new_point_data_temp = self.floor_correction(
+            sorted_point_data, headX, headZ, headO, point_data)
         headpoints = sorted_point_data[:, 0:4, :]
 
-        os.rename(self.template_file, '{}_notreheaded.mat'.format(self.template_file[:-4]))
+        def replace_stuff_temp(guy, name):
+            if np.sum(np.ravel(np.isnan(guy))) > 0:
+                guy[np.isnan(guy)] = -100000000
+            rmat[name] = np.ravel(guy)
+
+        replace_stuff_temp(new_head_origin_temp, 'headorigin')
+        replace_stuff_temp(new_head_x_temp, 'headX')
+        # replace_stuff_temp(ydir, 'headY')
+        replace_stuff_temp(new_head_z_temp, 'headZ')
+        replace_stuff_temp(new_point_data_temp, 'pointdata')
+
+        new_name = '{}_notreheaded.mat'.format(self.template_file[:-4])
+        scipy.io.savemat(new_name, rmat)
+
+        # os.rename(self.template_file, '{}_notreheaded.mat'.format(self.template_file[:-4]))
 
         reftpnts = self.get_random_timepoints_with_four_head_points(head_points=headpoints, check_point_num=300)
         refhpts = headpoints[reftpnts, :, :]
@@ -430,8 +461,8 @@ class ReHead:
 
         ii = 1
         for other_file in tqdm(self.other_files):
-            Omat, OheadO, OheadX, OheadZ, Osorted_point_data = self.get_points(file_name=other_file)
-            floor_rot_mat, sorted_point_data_new, new_head_x, new_head_z, new_head_origin = self.floor_correction(Osorted_point_data, OheadX, OheadZ, OheadO)
+            Omat, OheadO, OheadX, OheadZ, Osorted_point_data, Opoint_data = self.get_points(file_name=other_file)
+            floor_rot_mat, sorted_point_data_new, new_head_x, new_head_z, new_head_origin, new_point_data = self.floor_correction(Osorted_point_data, OheadX, OheadZ, OheadO, Opoint_data)
             OheadO = new_head_origin
             OheadX = new_head_x
             OheadZ = new_head_z
@@ -508,6 +539,7 @@ class ReHead:
             replace_stuff(xdir, 'headX')
             replace_stuff(ydir, 'headY')
             replace_stuff(newzdir, 'headZ')
+            replace_stuff(new_point_data, 'pointdata')
 
             new_name = '{}_reheaded.mat'.format(other_file[:-4])
             scipy.io.savemat(new_name, Omat)

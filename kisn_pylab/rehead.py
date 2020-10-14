@@ -2,16 +2,20 @@
 
 """
 
-@author: bartulem (original code: B. A. Dunn)
+@authors: Jingyi Guo Fulgostad & bartulem (original code: B. A. Dunn)
 
-Re-head various tracking files according to one template file.
+Re-floor and re-head various tracking files according to one template file.
 
-This script brings the heading parameters from several sessions to
+Due to some discrepancies in floor tilt, this script fits the floor to lie
+on the plain covered by the rear point, and corrects for the elevation by
+subtracting the actual offset of the sync LEDs to the floor.
+
+This script also brings the heading parameters from several sessions to
 a common footing by using a template heading session (ideally, a session
 where the animal moved most naturally and exhibited the best range of
 behaviors) to correct heading parameters in other comparable sessions.
 
-! NB: the underlying assumption is that all sessions to be re-headed
+!NB: the underlying assumption is that all sessions to be re-headed
 with the template file had the same rigid body configuration as the
 template file!
 
@@ -24,6 +28,8 @@ import warnings
 import numpy as np
 import scipy.io
 from random import shuffle
+# import random
+from itertools import permutations
 from tqdm.notebook import tqdm
 from scipy.optimize import minimize
 
@@ -73,7 +79,7 @@ class ReHead:
         # 8: ['golden rod', 'LED Marker 2']
         # 9: ['golden rod', 'LED Marker 3']
 
-        point_number = 7  # NOTE THERE ARE MORE POINTS BUT WE DO NOT CARE ABOUT THEM
+        point_number = 10  # NOTE THERE ARE MORE POINTS BUT WE DO NOT CARE ABOUT THEM
         sorted_point_data = np.empty((frame_number, point_number, 3))
         sorted_point_data[:] = np.nan
         for t in np.arange(frame_number):
@@ -82,7 +88,76 @@ class ReHead:
                     if point_data[j, :, t][3] == k:
                         sorted_point_data[t, k, :] = point_data[j, :, t][0:3]
 
-        return mat_file, head_origin, headX, headZ, sorted_point_data[:, :4, :]
+        return mat_file, head_origin, headX, headZ, sorted_point_data
+
+
+    def floor_correction(self, sorted_point_data, head_x, head_z, head_origin):
+        butt_point = sorted_point_data[:, 6, :]
+        butt_point = butt_point[~np.isnan(butt_point[:, 0]), :]
+        nframe = len(butt_point)
+        a = np.zeros(nframe)
+        a[:] = 1
+        b = butt_point[:, 0]
+        c = butt_point[:, 1]
+        X_mat = np.column_stack([a, b, c])
+        y_vec = butt_point[:, 2]
+
+        LHS = X_mat.transpose().dot(X_mat)
+        RHS = X_mat.transpose().dot(y_vec)
+        beta = np.linalg.solve(LHS, RHS)
+
+        a_hat = beta[1]
+        b_hat = beta[2]
+        d_hat = beta[0]
+
+        vx = np.array([1, 0, a_hat])
+        vy = np.array([0, 1, b_hat])
+        vz = np.array([-a_hat, -b_hat, 1])
+
+        vx = vx / np.linalg.norm(vx)
+        vy = vy / np.linalg.norm(vy)
+        vz = vz / np.linalg.norm(vz)
+
+        floor_rot_mat = np.column_stack([vx, vy, vz]).transpose()
+        shpae_points = np.shape(sorted_point_data)
+        sorted_point_data_new = np.zeros(shpae_points)
+        sorted_point_data_new[:] = np.nan
+        for t in np.arange(shpae_points[0]):
+            for k in np.arange(shpae_points[1]):
+                if (np.isnan(sorted_point_data[t, k, 0])):
+                    continue
+                sorted_point_data_new[t, k, :] = floor_rot_mat.dot(sorted_point_data[t, k, :])
+
+        da = np.nanmedian(sorted_point_data_new[:,7, 2])
+        db = np.nanmedian(sorted_point_data_new[:, 8, 2])
+        dc = np.nanmedian(sorted_point_data_new[:, 9, 2])
+        led_height = (da + db + dc) / 3
+        led_offset = led_height - 0.5135
+
+        sorted_point_data_new[:,:,2] = sorted_point_data_new[:,:,2] - led_offset
+
+        new_rot_mat = np.zeros((shpae_points[0], 3, 3))
+        new_rot_mat[:] = np.nan
+        new_head_x = np.zeros((shpae_points[0], 3))
+        new_head_x[:] = np.nan
+        new_head_z = np.zeros((shpae_points[0], 3))
+        new_head_z[:] = np.nan
+        new_head_origin = np.zeros((shpae_points[0], 3))
+        new_head_origin[:] = np.nan
+        for t in range(shpae_points[0]):
+            if (~np.isnan(head_x[t, 0])):
+                hx = head_x[t] / np.linalg.norm(head_x[t])
+                hz = head_z[t] / np.linalg.norm(head_z[t])
+                hy = np.cross(hz, hx)
+                head_mat = np.array([hx, hy, hz])  # global to head
+                new_rot_mat[t] = np.dot(floor_rot_mat, head_mat.transpose()).transpose()
+                new_head_x[t] = new_rot_mat[t, 0, :]
+                new_head_z[t] = new_rot_mat[t, 2, :]
+                new_head_origin[t] = np.dot(floor_rot_mat, head_origin[t])
+
+        return floor_rot_mat, sorted_point_data_new, new_head_x, new_head_z, new_head_origin
+
+
 
     # get a random subset of head data and check how infested it is with NANs
     def get_random_timepoints_with_four_head_points(self, head_points, check_point_num):
@@ -94,7 +169,14 @@ class ReHead:
             The number of points to estimate things with; should be minimally 300.
         ----------
         """
-
+        # n_frames = len(head_points)
+        # reshape_hps = np.reshape(head_points, (n_frames, 12))
+        # total_non_nan_indices = np.where(np.sum(np.isnan(reshape_hps), axis=1) == 0)[0].tolist()
+        # non_nan_indices = np.unique(random.choices(total_non_nan_indices, k=10*check_point_num))
+        # if len(non_nan_indices) < check_point_num:
+        #     print('There are more NANs in the test data than not!')
+        #     sys.exit()
+        # non_nan_indices = non_nan_indices[0:300]
         total_frame_num = len(head_points[:, 0, 0])
         time_points = list(range(total_frame_num))
         shuffle(time_points)
@@ -146,22 +228,29 @@ class ReHead:
                     iii += 1
             return np.sqrt(np.sum((try_edges - ref_edges) ** 2))
 
-        scores = []
-        orderings = []
-        for i in range(4):
-            for j in range(4):
-                if j == i:
-                    continue
-                for k in range(4):
-                    if j == k or i == k:
-                        continue
-                    for m in range(4):
-                        if k == m or j == m or i == m:
-                            continue
-                        an_order = [i, j, k, m]
-                        scores.append(get_difference(an_order))
-                        orderings.append(an_order)
-        scores = np.ravel(np.array(scores))
+        # scores = []
+        # orderings = []
+        # for i in range(4):
+        #     for j in range(4):
+        #         if j == i:
+        #             continue
+        #         for k in range(4):
+        #             if j == k or i == k:
+        #                 continue
+        #             for m in range(4):
+        #                 if k == m or j == m or i == m:
+        #                     continue
+        #                 an_order = [i, j, k, m]
+        #                 print(an_order)
+        #                 scores.append(get_difference(an_order))
+        #                 orderings.append(an_order)
+        # scores = np.ravel(np.array(scores))
+        #
+        # inds = np.argsort(scores)
+        scores = np.zeros(24)
+        orderings = list(permutations(np.arange(4)))
+        for i in range(24):
+            scores[i] = get_difference(orderings[i])
 
         inds = np.argsort(scores)
 
@@ -181,7 +270,7 @@ class ReHead:
 
         return np.dot(t, r)
 
-    # find mapping ans shift CSYS
+    # find mapping ans shift CSYS coordinate systems
     def find_mapping_from_A_to_B_and_shit_CSYS(self, big_a, big_b, acsys):
 
         def get_new_guy(big_a, vv):
@@ -324,7 +413,8 @@ class ReHead:
         print('Re-heading file(s), please be patient - this could take >10 minutes.')
 
         # change name of the original file, so it's clear it's not re-headed
-        rmat, headO, headX, headZ, headpoints = self.get_points(file_name=self.template_file)
+        rmat, headO, headX, headZ, sorted_point_data = self.get_points(file_name=self.template_file)
+        headpoints = sorted_point_data[:,0:4,:]
 
         os.rename(self.template_file, '{}_notreheaded.mat'.format(self.template_file[:-4]))
 
@@ -343,7 +433,12 @@ class ReHead:
 
         ii = 1
         for other_file in tqdm(self.other_files):
-            Omat, OheadO, OheadX, OheadZ, Oheadpoints = self.get_points(file_name=other_file)
+            Omat, OheadO, OheadX, OheadZ, Osorted_point_data = self.get_points(file_name=other_file)
+            floor_rot_mat, sorted_point_data_new, new_head_x, new_head_z, new_head_origin = self.floor_correction(Osorted_point_data, OheadX, OheadZ, OheadO)
+            OheadO = new_head_origin
+            OheadX = new_head_x
+            OheadZ = new_head_z
+            Oheadpoints = sorted_point_data_new[:,0:4,:]
             Otpnts = self.get_random_timepoints_with_four_head_points(head_points=Oheadpoints, check_point_num=300)
             Ohpts = Oheadpoints[Otpnts, :, :]
             bigOcsys = self.get_csys_points(hO=OheadO, hX=OheadX, hZ=OheadZ)

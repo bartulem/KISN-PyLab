@@ -90,7 +90,6 @@ class ReHead:
 
         return mat_file, head_origin, headX, headZ, sorted_point_data
 
-
     def floor_correction(self, sorted_point_data, head_x, head_z, head_origin):
         butt_point = sorted_point_data[:, 6, :]
         butt_point = butt_point[~np.isnan(butt_point[:, 0]), :]
@@ -128,13 +127,13 @@ class ReHead:
                     continue
                 sorted_point_data_new[t, k, :] = floor_rot_mat.dot(sorted_point_data[t, k, :])
 
-        da = np.nanmedian(sorted_point_data_new[:,7, 2])
+        da = np.nanmedian(sorted_point_data_new[:, 7, 2])
         db = np.nanmedian(sorted_point_data_new[:, 8, 2])
         dc = np.nanmedian(sorted_point_data_new[:, 9, 2])
         led_height = (da + db + dc) / 3
         led_offset = led_height - 0.5135
 
-        sorted_point_data_new[:,:,2] = sorted_point_data_new[:,:,2] - led_offset
+        sorted_point_data_new[:, :, 2] = sorted_point_data_new[:, :, 2] - led_offset
 
         new_rot_mat = np.zeros((shpae_points[0], 3, 3))
         new_rot_mat[:] = np.nan
@@ -156,8 +155,6 @@ class ReHead:
                 new_head_origin[t] = np.dot(floor_rot_mat, head_origin[t])
 
         return floor_rot_mat, sorted_point_data_new, new_head_x, new_head_z, new_head_origin
-
-
 
     # get a random subset of head data and check how infested it is with NANs
     def get_random_timepoints_with_four_head_points(self, head_points, check_point_num):
@@ -407,14 +404,14 @@ class ReHead:
                 print('Could not find file {}, try again.'.format(afile))
                 sys.exit()
             else:
-                print('File number {}: {}'.format(file_indx+1, afile))
+                print('File number {}: {}'.format(file_indx + 1, afile))
 
         start_time = time.time()
         print('Re-heading file(s), please be patient - this could take >10 minutes.')
 
         # change name of the original file, so it's clear it's not re-headed
         rmat, headO, headX, headZ, sorted_point_data = self.get_points(file_name=self.template_file)
-        headpoints = sorted_point_data[:,0:4,:]
+        headpoints = sorted_point_data[:, 0:4, :]
 
         os.rename(self.template_file, '{}_notreheaded.mat'.format(self.template_file[:-4]))
 
@@ -438,7 +435,7 @@ class ReHead:
             OheadO = new_head_origin
             OheadX = new_head_x
             OheadZ = new_head_z
-            Oheadpoints = sorted_point_data_new[:,0:4,:]
+            Oheadpoints = sorted_point_data_new[:, 0:4, :]
             Otpnts = self.get_random_timepoints_with_four_head_points(head_points=Oheadpoints, check_point_num=300)
             Ohpts = Oheadpoints[Otpnts, :, :]
             bigOcsys = self.get_csys_points(hO=OheadO, hX=OheadX, hZ=OheadZ)
@@ -469,7 +466,7 @@ class ReHead:
             # print('Sorted scores, best', newscores[inds[:5]], 'and worst', newscores[inds[(-5):]])
 
             # only use the best half
-            TT = int(round(float(len(newscores))*0.5))
+            TT = int(round(float(len(newscores)) * 0.5))
             smallRFcsys = np.zeros((TT, 4, 3))
             smalllOcsys = np.zeros((TT, 4, 3))
             for i in range(TT):
@@ -483,26 +480,27 @@ class ReHead:
             zdir = adjustedbigOcsys[:, 3, :] - adjO
 
             NN = ~np.isnan(adjO[:, 0])
-            den = np.sqrt(np.sum((xdir[NN, :])**2, 1))
+            den = np.sqrt(np.sum((xdir[NN, :]) ** 2, 1))
             for i in range(3):
                 xdir[NN, i] = xdir[NN, i] / den
 
-            den = np.sqrt(np.sum((ydir[NN, :])**2, 1))
+            den = np.sqrt(np.sum((ydir[NN, :]) ** 2, 1))
             for i in range(3):
                 ydir[NN, i] = ydir[NN, i] / den
 
-            den = np.sqrt(np.sum((zdir[NN, :])**2, 1))
+            den = np.sqrt(np.sum((zdir[NN, :]) ** 2, 1))
             for i in range(3):
                 zdir[NN, i] = zdir[NN, i] / den
 
             newzdir = np.zeros(np.shape(zdir))
             newzdir[:] = np.nan
             newzdir[NN, :] = np.cross(xdir[NN, :], ydir[NN, :], axis=1)
+
             # shouldbeones = np.sum(newzdir[NN, :] * zdir[NN, :], 1)
             # print('Should be ones (dot(z,z))!!', np.mean(shouldbeones), np.std(shouldbeones), np,min(shouldbeones), np.max(shouldbeones))
 
             def replace_stuff(guy, name):
-                if np.sum(np.ravel(np.isnan(guy)))>0:
+                if np.sum(np.ravel(np.isnan(guy))) > 0:
                     guy[np.isnan(guy)] = -100000000
                 Omat[name] = np.ravel(guy)
 

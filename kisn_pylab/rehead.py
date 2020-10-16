@@ -309,14 +309,13 @@ class ReHead:
 
         while numtimesworked < 5 and total_iter < 10000:
             total_iter += 1
-            # print(numtimesworked)
             x0 = np.random.rand(12)
             res = minimize(get_score, x0, method='BFGS', tol=1e-9, options={'gtol': 1e-9, 'disp': False})
             if res.success:
                 numtimesworked = numtimesworked + 1
                 optvv = res.x
                 score = get_score(optvv) / float(len(acsys[:, 0, 0]))
-                print(score)
+                # print(score)
                 if score < bestscore:
                     bestscore = score
                     bestvv = optvv
@@ -371,7 +370,7 @@ class ReHead:
                 print('File number {}: {}'.format(file_indx + 1, afile))
 
         start_time = time.time()
-        print('Re-heading file(s), please be patient - this could take >10 minutes.')
+        print('Re-heading file(s), please be patient - this could take >20 minutes.')
 
         # change name of the original file, so it's clear it's not re-headed
         rmat, headO, headX, headZ, sorted_point_data, point_data = self.get_points(file_name=self.template_file)

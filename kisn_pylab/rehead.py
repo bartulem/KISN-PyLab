@@ -83,11 +83,11 @@ class ReHead:
         sorted_point_data = np.empty((frame_number, point_number, 3))
         sorted_point_data[:] = np.nan
         for t in np.arange(frame_number):
-            # sorted_point_data[t, point_data[:, 3, t].astype(int), :] = point_data[:, :3, t]
-            for j in np.arange(point_number):
-                for k in np.arange(point_number):
-                    if point_data[j, 3, t] == k:
-                        sorted_point_data[t, k, :] = point_data[j, :3, t]
+            marker_label = point_data[:, 3, t]
+            pind = np.where(marker_label < point_number)[0]
+            if len(pind) > 1:
+                marker_inuse = marker_label[pind].astype(int)
+                sorted_point_data[t, marker_inuse, :] = point_data[pind, :3, t]
 
         return mat_file, head_origin, headX, headZ, sorted_point_data, point_data
 
@@ -124,10 +124,6 @@ class ReHead:
         sorted_point_data_new = np.zeros(shape_points)
         sorted_point_data_new[:] = np.nan
         for t in np.arange(shape_points[0]):
-            # for k in np.arange(shape_points[1]):
-            # if (np.isnan(sorted_point_data[t, k, 0])):
-            #     continue
-            # sorted_point_data_new[t, :, :] = floor_rot_mat.dot(sorted_point_data[t, k, :])
             sorted_point_data_new[t, :, :] = floor_rot_mat.dot(sorted_point_data[t, :, :].transpose()).transpose()
 
         da = np.nanmedian(sorted_point_data_new[:, 7, 2])
@@ -147,27 +143,28 @@ class ReHead:
         new_head_origin = np.zeros((shape_points[0], 3))
         new_head_origin[:] = np.nan
         for t in range(shape_points[0]):
-            if (~np.isnan(head_x[t, 0])):
+            if ~np.isnan(head_x[t, 0]):
                 hx = head_x[t] / np.linalg.norm(head_x[t])
                 hz = head_z[t] / np.linalg.norm(head_z[t])
                 hy = np.cross(hz, hx)
                 head_mat = np.array([hx, hy, hz])  # global to head
                 new_rot_mat[t] = np.dot(floor_rot_mat, head_mat.transpose()).transpose()
-                new_head_x[t] = new_rot_mat[t, 0, :]
-                new_head_z[t] = new_rot_mat[t, 2, :]
+                new_head_x[t] = new_rot_mat[t, 0, :] / np.linalg.norm(new_rot_mat[t, 0, :])
+                new_head_z[t] = new_rot_mat[t, 2, :] / np.linalg.norm(new_rot_mat[t, 2, :])
                 new_head_origin[t] = np.dot(floor_rot_mat, head_origin[t])
 
         point_number = 10  # NOTE THERE ARE MORE POINTS BUT WE DO NOT CARE ABOUT THEM
         new_point_data = point_data.copy()
 
         for t in np.arange(shape_points[0]):
-            for j in np.arange(shape_points[1]):
-                for k in np.arange(shape_points[1]):
-                    if point_data[j, 3, t] == k:
-                        new_point_data[j, :3, t] = sorted_point_data[t, k, :]
+            marker_label = point_data[:, 3, t]
+            pind = np.where(marker_label < point_number)[0]
+            if len(pind) > 1:
+                marker_inuse = marker_label[pind].astype(int)
+                new_point_data[pind, :3, t] = sorted_point_data[t, marker_inuse, :]
 
         new_point_data = np.reshape(new_point_data, (1, pdd[0] * pdd[1] * pdd[2]))
-        new_point_data[np.isnan(new_point_data)] = -1.00000e+06
+        new_point_data[np.isnan(new_point_data)] = -1000000
 
         return floor_rot_mat, sorted_point_data_new, new_head_x, new_head_z, new_head_origin, new_point_data
 
@@ -186,24 +183,9 @@ class ReHead:
         total_non_nan_indices = np.where(np.sum(np.isnan(reshape_hps), axis=1) == 0)[0].tolist()
         non_nan_indices = np.unique(random.choices(total_non_nan_indices, k=10 * check_point_num))
         if len(non_nan_indices) < check_point_num:
-            print('There are more NANs in the test data than not!')
-            sys.exit()
-        non_nan_indices = non_nan_indices[:check_point_num]
-        # total_frame_num = len(head_points[:, 0, 0])
-        # time_points = list(range(total_frame_num))
-        # shuffle(time_points)
-        #
-        # non_nan_indices = []
-        # for i in range(10 * check_point_num):
-        #     if np.sum(np.ravel(np.isnan(head_points[time_points[i], :, :]))) < 1:
-        #         non_nan_indices.append(time_points[i])
-        #         if len(non_nan_indices) >= check_point_num:
-        #             break
-        #
-        # if len(non_nan_indices) < check_point_num:
-        #     print('There are more NANs in the test data than not!')
-        #     sys.exit()
+            raise Exception('There are more NANs in the test data than not!')
 
+        non_nan_indices = non_nan_indices[:check_point_num]
         return non_nan_indices
 
     # get edges between points
@@ -240,34 +222,12 @@ class ReHead:
                     iii += 1
             return np.sqrt(np.sum((try_edges - ref_edges) ** 2))
 
-        # scores = []
-        # orderings = []
-        # for i in range(4):
-        #     for j in range(4):
-        #         if j == i:
-        #             continue
-        #         for k in range(4):
-        #             if j == k or i == k:
-        #                 continue
-        #             for m in range(4):
-        #                 if k == m or j == m or i == m:
-        #                     continue
-        #                 an_order = [i, j, k, m]
-        #                 print(an_order)
-        #                 scores.append(get_difference(an_order))
-        #                 orderings.append(an_order)
-        # scores = np.ravel(np.array(scores))
-        #
-        # inds = np.argsort(scores)
         scores = np.zeros(24)
         orderings = list(permutations(np.arange(4)))
         for i in range(24):
             scores[i] = get_difference(orderings[i])
 
         inds = np.argsort(scores)
-
-        # print('All scores', scores[inds])
-        # print('Going with', min(scores), '!!!', 'which is', orderings[inds[0]], 'at', scores[inds[0]])
 
         return orderings[inds[0]]
 
@@ -304,8 +264,9 @@ class ReHead:
 
         opt_vv = []
         opt_score = np.nan
-        for i in range(200):
-            x0 = [0., 0., 0., np.random.rand() * 2. * np.pi, np.random.rand() * 2. * np.pi, np.random.rand() * 2. * np.pi]
+        for i in range(500):
+            x0 = [0., 0., 0., np.random.rand() * 2. * np.pi, np.random.rand() * 2. * np.pi,
+                  np.random.rand() * 2. * np.pi]
             res = minimize(get_dist, x0, method='BFGS', tol=1e-9, options={'gtol': 1e-9, 'disp': False})
             if res.success:
                 opt_vv = res.x
@@ -341,41 +302,30 @@ class ReHead:
             return np.nansum(np.ravel((tcsys - bcsys) ** 2))
 
         bestvv = []
-        bestscore = 0.0001
+        bestscore = 0.0005
         numtimesworked = 0
-        for i in range(300):
-            x0 = np.zeros(12)
-            for j in range(12):
-                x0[j] = np.random.rand() - 0.5
+
+        total_iter = 0
+
+        while numtimesworked < 5 and total_iter < 10000:
+            total_iter += 1
+            # print(numtimesworked)
+            x0 = np.random.rand(12)
             res = minimize(get_score, x0, method='BFGS', tol=1e-9, options={'gtol': 1e-9, 'disp': False})
             if res.success:
                 numtimesworked = numtimesworked + 1
                 optvv = res.x
                 score = get_score(optvv) / float(len(acsys[:, 0, 0]))
+                print(score)
                 if score < bestscore:
                     bestscore = score
                     bestvv = optvv
 
-                if numtimesworked > 5:
-                    break
-
         if len(bestvv) < 3:
-            print('Nothing good happened here!!!')
-            sys.exit()
+            print(len(bestvv))
+            raise Exception('Nothing good happened here!!!')
 
-        # print('\nBest scores was', bestscore)
         new_big_a_csys = csys_transformator(bestvv, big_a_csys)
-        # tcsys = csys_transformator(bestvv, acsys)
-        # xdir = tcsys[:, 1, :] - tcsys[:, 0, :]
-        # ydir = tcsys[:, 2, :] - tcsys[:, 0, :]
-        # zdir = tcsys[:, 3, :] - tcsys[:, 0, :]
-        # shouldbeones = np.sqrt(np.sum(xdir**2, 1))
-        # print('should be close to 1, x', np.nanmean(shouldbeones), np.nanstd(shouldbeones), np.nanmax(shouldbeones), np.nanmin(shouldbeones))
-        # shouldbeones = np.sqrt(np.sum(ydir**2, 1))
-        # print('should be close to 1, y', np.nanmean(shouldbeones), np.nanstd(shouldbeones), np.nanmax(shouldbeones), np.nanmin(shouldbeones))
-        # shouldbeones = np.sqrt(np.sum(zdir**2, 1))
-        # print('should be close to 1, z', np.nanmean(shouldbeones), np.nanstd(shouldbeones), np.nanmax(shouldbeones), np.nanmin(shouldbeones))
-
         return new_big_a_csys
 
     # get csys points
@@ -394,11 +344,10 @@ class ReHead:
                 hY[t, :] = np.cross(hZ[t, :], hX[t, :])
 
                 if abs(sum((hY[t, :]) ** 2) - 1.) > 0.001:
-                    print('WTF??? Why is Z cross X not of length 1??')
                     print('Z:', hZ[t, :])
                     print('Y:', hY[t, :])
                     print('X:', hX[t, :])
-                    sys.exit()
+                    raise Exception('WTF??? Why is Z cross X not of length 1??')
         csys[:, 2, :] = hO + hY
 
         return csys
@@ -443,8 +392,6 @@ class ReHead:
 
         new_name = '{}_notreheaded.mat'.format(self.template_file[:-4])
         scipy.io.savemat(new_name, rmat)
-
-        # os.rename(self.template_file, '{}_notreheaded.mat'.format(self.template_file[:-4]))
 
         reftpnts = self.get_random_timepoints_with_four_head_points(head_points=headpoints, check_point_num=300)
         refhpts = headpoints[reftpnts, :, :]

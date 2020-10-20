@@ -163,9 +163,9 @@ class ClusterQuality:
         except ValueError:
             fwhm = np.nan
 
-        # calculate slope of waveform .5 ms after the initial through
+        # calculate slope of normalized waveform .5 ms after the initial through
         try:
-            slope = (mean_waveform[through_indx + 16] - mean_waveform[through_indx + 14]) / 2
+            slope = ((mean_waveform[through_indx + 16] - mean_waveform[through_indx + 14]) / mean_waveform[through_indx]) / 2
         except ValueError:
             slope = np.nan
 

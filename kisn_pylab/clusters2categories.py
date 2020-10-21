@@ -48,7 +48,6 @@ class ClusterQuality:
     def __init__(self, kilosort_output_dir):
         self.kilosort_output_dir = kilosort_output_dir
 
-    @jit
     def get_waveforms(self, input_dict):
 
         """

@@ -33,6 +33,7 @@ from scipy.spatial.distance import cdist
 from scipy.stats import chi2
 from sklearn.neighbors import NearestNeighbors
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis as LDA
+from numba import jit
 import pickle
 import warnings
 
@@ -47,6 +48,7 @@ class ClusterQuality:
     def __init__(self, kilosort_output_dir):
         self.kilosort_output_dir = kilosort_output_dir
 
+    @jit
     def get_waveforms(self, input_dict):
 
         """
@@ -165,7 +167,10 @@ class ClusterQuality:
 
         # calculate end_slope of normalized waveform .5 ms after the initial through
         try:
-            end_slope = ((mean_waveform[through_indx + 16] - mean_waveform[through_indx + 14]) / mean_waveform[through_indx]) / 2
+            if mean_waveform[through_indx] == 0:
+                end_slope = np.nan
+            else:
+                end_slope = (mean_waveform[through_indx + 16] - mean_waveform[through_indx + 14]) / (np.abs(mean_waveform[through_indx]) * 2)
         except IndexError:
             end_slope = np.nan
 
@@ -178,6 +183,7 @@ class ClusterQuality:
                 'pt_ratio': pt_ratio,
                 'end_slope': end_slope}
 
+    @jit
     def get_cluster_pcs(self, input_dict):
 
         """
@@ -237,6 +243,7 @@ class ClusterQuality:
         else:
             return None
 
+    @jit
     def isi_violations(self, input_dict):
 
         """
@@ -277,10 +284,10 @@ class ClusterQuality:
         # time during which refractory period violations could occur around true spikes
         # the factor of two arises since refractory period violations occur whether
         # a rogue spike appears immediately before or after a true spike
-        violation_time = 2 * len(spikes) * (isi_threshold - min_isi)
+        violation_time = 2 * spikes.shape[0] * (isi_threshold - min_isi)
 
         # overall firing rate of the cell in the session
-        firing_rate = len(spikes) / (self.npx_samples / self.npx_sampling_rate)
+        firing_rate = spikes.shape[0] / (self.npx_samples / self.npx_sampling_rate)
 
         # how many violations happen during the violation time
         violation_rate = total_violations / violation_time
@@ -290,6 +297,7 @@ class ClusterQuality:
 
         return fp_rate
 
+    @jit
     def mahalanobis_metrics(self, input_dict):
 
         """
@@ -355,6 +363,7 @@ class ClusterQuality:
         return {'isolation_distance': isolation_distance,
                 'l_ratio': l_ratio}
 
+    @jit
     def nearest_neighbors_metrics(self, input_dict):
 
         """
@@ -416,6 +425,7 @@ class ClusterQuality:
         return {'hit_rate': hit_rate,
                 'miss_rate': miss_rate}
 
+    @jit
     def lda_metric(self, input_dict):
 
         """

@@ -163,11 +163,11 @@ class ClusterQuality:
         except ValueError:
             fwhm = np.nan
 
-        # calculate slope of normalized waveform .5 ms after the initial through
+        # calculate end_slope of normalized waveform .5 ms after the initial through
         try:
-            slope = ((mean_waveform[through_indx + 16] - mean_waveform[through_indx + 14]) / mean_waveform[through_indx]) / 2
-        except ValueError:
-            slope = np.nan
+            end_slope = ((mean_waveform[through_indx + 16] - mean_waveform[through_indx + 14]) / mean_waveform[through_indx]) / 2
+        except IndexError:
+            end_slope = np.nan
 
         # get peak-to-through ratio
         pt_ratio = np.abs(mean_waveform[peak_indx] - mean_waveform[0]) / np.abs(mean_waveform[through_indx] - mean_waveform[0])
@@ -176,7 +176,7 @@ class ClusterQuality:
                 'waveform_duration': waveform_duration / 30,
                 'fwhm': fwhm / 30,
                 'pt_ratio': pt_ratio,
-                'slope': slope}
+                'end_slope': end_slope}
 
     def get_cluster_pcs(self, input_dict):
 
@@ -643,7 +643,7 @@ class ClusterQuality:
                                                                         'waveform_duration': np.nan,
                                                                         'fwhm': np.nan,
                                                                         'pt_ratio': np.nan,
-                                                                        'slope': np.nan},
+                                                                        'end_slope': np.nan},
                                                    'new_label': 'noise'}
 
             if self.cluster_df.loc[idx, 'group'] != 'noise':

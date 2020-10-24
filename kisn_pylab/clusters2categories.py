@@ -80,13 +80,13 @@ class ClusterQuality:
         ----------
         output : dictionary
             'snr' : float
-                Ratio between peak-through span and the waveform SD.
+                Ratio between peak-trough span and the waveform SD.
             'waveform_duration' : float
-                The time difference between peak and through (in ms).
+                The time difference between peak and trough (in ms).
             'fwhm' : float
                 The full spike width at half maximum (in ms).
             'pt_ratio' : float
-                The ratio between peak and through.
+                The ratio between peak and trough.
         ----------
         """
 
@@ -124,57 +124,57 @@ class ClusterQuality:
         mean_waveform = np.nanmean(waveforms[:, peak_ch, :], axis=0)
 
         # # # get SNR
-        peak_through_span = np.max(mean_waveform) - np.min(mean_waveform)
+        peak_trough_span = np.max(mean_waveform) - np.min(mean_waveform)
         waveform_error = waveforms[:, peak_ch, :] - np.tile(mean_waveform, (np.shape(waveforms[:, peak_ch, :])[0], 1))
-        snr = peak_through_span / (2 * np.nanstd(waveform_error.flatten()))
+        snr = peak_trough_span / (2 * np.nanstd(waveform_error.flatten()))
 
         # # # get waveform duration in milliseconds
-        through_indx = np.argmin(mean_waveform)
-        peak_indx = np.argmax(mean_waveform)
+        trough_idx = np.argmin(mean_waveform)
+        peak_idx = np.argmax(mean_waveform)
 
-        # to avoid detecting peak before through, explained below:
-        # sometimes, there could be a peak before the through and what you want is to
-        # get the distance between the through and the peak that follows it, not the one
+        # to avoid detecting peak before trough, explained below:
+        # sometimes, there could be a peak before the trough and what you want is to
+        # get the distance between the trough and the peak that follows it, not the one
         # before - provided that the voltage at the peak is NOT higher than the absolute
-        # voltage at the through. If it is, on the other hand, these could be positive
+        # voltage at the trough. If it is, on the other hand, these could be positive
         # peaked units so you want to get the difference between the first peak and the
-        # subsequent through
-        if peak_indx < through_indx:
-            waveform_duration = through_indx - peak_indx
+        # subsequent trough
+        if peak_idx < trough_idx:
+            waveform_duration = trough_idx - peak_idx
         else:
-            waveform_duration = peak_indx - through_indx
+            waveform_duration = peak_idx - trough_idx
 
         # get FWHM in milliseconds
         timestamps = np.arange(0, samples_per_spike, 1)
         try:
-            if np.abs(mean_waveform[peak_indx] - mean_waveform[0]) > np.abs(mean_waveform[through_indx] - mean_waveform[0]):
-                threshold = ((mean_waveform[peak_indx] - mean_waveform[0]) * 0.5) + mean_waveform[0]
+            if np.abs(mean_waveform[peak_idx] - mean_waveform[0]) > np.abs(mean_waveform[trough_idx] - mean_waveform[0]):
+                threshold = ((mean_waveform[peak_idx] - mean_waveform[0]) * 0.5) + mean_waveform[0]
                 thresh_crossing_1 = np.min(
-                    np.where(mean_waveform[:peak_indx] > threshold)[0])
+                    np.where(mean_waveform[:peak_idx] > threshold)[0])
                 thresh_crossing_2 = np.min(
-                    np.where(mean_waveform[peak_indx:] < threshold)[0]) + peak_indx
+                    np.where(mean_waveform[peak_idx:] < threshold)[0]) + peak_idx
             else:
-                threshold = ((mean_waveform[through_indx] - mean_waveform[0]) * 0.5) + mean_waveform[0]
+                threshold = ((mean_waveform[trough_idx] - mean_waveform[0]) * 0.5) + mean_waveform[0]
                 thresh_crossing_1 = np.min(
-                    np.where(mean_waveform[:through_indx] < threshold)[0])
+                    np.where(mean_waveform[:trough_idx] < threshold)[0])
                 thresh_crossing_2 = np.min(
-                    np.where(mean_waveform[through_indx:] > threshold)[0]) + through_indx
+                    np.where(mean_waveform[trough_idx:] > threshold)[0]) + trough_idx
 
             fwhm = timestamps[thresh_crossing_2] - timestamps[thresh_crossing_1]
         except ValueError:
             fwhm = np.nan
 
-        # calculate end_slope of normalized waveform .5 ms after the initial through
+        # calculate end_slope of normalized waveform .5 ms after the initial trough
         try:
-            if mean_waveform[through_indx] == 0:
+            if mean_waveform[trough_idx] == 0:
                 end_slope = np.nan
             else:
-                end_slope = (mean_waveform[through_indx + 16] - mean_waveform[through_indx + 14]) / (np.abs(mean_waveform[through_indx]) * 2)
+                end_slope = (mean_waveform[trough_idx + 16] - mean_waveform[trough_idx + 14]) / (np.abs(mean_waveform[trough_idx]) * 2)
         except IndexError:
             end_slope = np.nan
 
-        # get peak-to-through ratio
-        pt_ratio = np.abs(mean_waveform[peak_indx] - mean_waveform[0]) / np.abs(mean_waveform[through_indx] - mean_waveform[0])
+        # get peak-to-trough ratio
+        pt_ratio = np.abs(mean_waveform[peak_idx] - mean_waveform[0]) / np.abs(mean_waveform[trough_idx] - mean_waveform[0])
 
         return {'snr': snr,
                 'waveform_duration': waveform_duration / 30,

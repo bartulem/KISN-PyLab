@@ -625,7 +625,7 @@ class ClusterQuality:
             half_spread = int((num_channels_to_compare - 1) / 2)
 
         # convert spike sample times to seconds
-        for idx, unit_id in enumerate(tqdm(self.cluster_df.loc[:, 'id'])):
+        for idx, unit_id in enumerate(tqdm(self.cluster_df.iloc[:, 0])):
 
             # *ContamPct* comes from Kilosort2 and is the ratio of the event rate in the central 2ms bin
             # of the histogram to the baseline of the auto-correlogram (the "shoulders"). It is an

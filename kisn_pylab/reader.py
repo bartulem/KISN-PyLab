@@ -96,8 +96,8 @@ class EventReader:
 
         nchan = int(kwargs['nchan'] if 'nchan' in kwargs.keys() and (type(kwargs['nchan']) == int or type(kwargs['nchan']) == float) else 385)
         sync_chan = int(kwargs['sync_chan'] if 'sync_chan' in kwargs.keys() and (type(kwargs['sync_chan']) == int or type(kwargs['sync_chan']) == float) else 385)
-        track_file = kwargs['track_file'] if 'track_file' in kwargs.keys() and type(kwargs['track_file']) == str else 0
-        imu_file = kwargs['imu_file'] if 'imu_file' in kwargs.keys() and type(kwargs['imu_file']) == str else 0
+        track_file = kwargs['track_file'] if 'track_file' in kwargs.keys() and type(kwargs['track_file']) == str else 'eldiablomuerte'
+        imu_file = kwargs['imu_file'] if 'imu_file' in kwargs.keys() and type(kwargs['imu_file']) == str else 'eldiablomuerte'
         sync_led_duration = int(kwargs['sync_led_duration'] if 'sync_led_duration' in kwargs.keys() and (type(kwargs['sync_led_duration']) == int or type(kwargs['sync_led_duration']) == float) else 250)
         sync_led_error = int(kwargs['sync_led_error'] if 'sync_led_error' in kwargs.keys() and (type(kwargs['sync_led_error']) == int or type(kwargs['sync_led_error']) == float) else 50)
         ground_probe = int(kwargs['ground_probe'] if 'ground_probe' in kwargs.keys() else 0)
@@ -106,7 +106,7 @@ class EventReader:
         sync_sequence = int(kwargs['sync_sequence'] if 'sync_sequence' in kwargs.keys() else 10)
         sample_error = int(kwargs['sample_error'] if 'sample_error' in kwargs.keys() and (type(kwargs['sample_error']) == int or type(kwargs['sample_error']) == float) else 30)
         which_imu_time = int(kwargs['which_imu_time'] if 'which_imu_time' in kwargs.keys() and (type(kwargs['which_imu_time']) == int or type(kwargs['which_imu_time']) == float) else 1)
-        sync_ipi_file = kwargs['sync_ipi_file'] if 'sync_ipi_file' in kwargs.keys() and type(kwargs['sync_ipi_file']) == str else 0
+        sync_ipi_file = kwargs['sync_ipi_file'] if 'sync_ipi_file' in kwargs.keys() and type(kwargs['sync_ipi_file']) == str else 'eldiablomuerte'
 
         # check that the NPX files are there
         for anpxfile in self.npx_files:

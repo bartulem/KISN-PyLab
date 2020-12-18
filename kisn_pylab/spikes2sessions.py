@@ -105,12 +105,12 @@ class ExtractSpikes:
         npx_sampling_rate = float(kwargs['npx_sampling_rate'] if 'npx_sampling_rate' in kwargs.keys() else 3e4)
         pkl_lengths = kwargs['pkl_lengths'] if 'pkl_lengths' in kwargs.keys() else 0
         ground_probe = int(kwargs['ground_probe'] if 'ground_probe' in kwargs.keys() else 0)
-        to_plot = kwargs['to_plot'] if 'to_plot' in kwargs.keys() and kwargs['to_plot'] in valid_booleans else 0
-        print_details = kwargs['print_details'] if 'print_details' in kwargs.keys() and kwargs['print_details'] in valid_booleans else 0
+        to_plot = kwargs['to_plot'] if 'to_plot' in kwargs.keys() and kwargs['to_plot'] in valid_booleans else False
+        print_details = kwargs['print_details'] if 'print_details' in kwargs.keys() and kwargs['print_details'] in valid_booleans else False
         important_cluster_groups = kwargs['important_cluster_groups'] if 'important_cluster_groups' in kwargs.keys() and type(kwargs['important_cluster_groups']) == list else ['good']
-        eliminate_duplicates = kwargs['eliminate_duplicates'] if 'eliminate_duplicates' in kwargs.keys() and kwargs['eliminate_duplicates'] in valid_booleans else 1
+        eliminate_duplicates = kwargs['eliminate_duplicates'] if 'eliminate_duplicates' in kwargs.keys() and kwargs['eliminate_duplicates'] in valid_booleans else True
         min_isi = kwargs['min_isi'] if 'min_isi' in kwargs.keys() and (type(kwargs['min_isi']) == int or type(kwargs['min_isi']) == float) else 0
-        switch_clock = kwargs['switch_clock'] if 'switch_clock' in kwargs.keys() and kwargs['switch_clock'] in valid_booleans else 0
+        switch_clock = kwargs['switch_clock'] if 'switch_clock' in kwargs.keys() and kwargs['switch_clock'] in valid_booleans else False
 
         # check that the .pkl concatenation files are there
         if pkl_lengths != 0:

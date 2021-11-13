@@ -3,7 +3,7 @@
 ---------------------------------------------------------------------------------
 This repository should facilitate the data processing pipeline for e-phys, IMU and 3D tracking experiments.
 
-[system diagram](./system_diagram.png)
+![system diagram](./system_diagram.png)
 
 It is useful, in single- or dual-probe settings, for:
 1. concatenating multiple Neuropixel recording sessions

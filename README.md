@@ -18,6 +18,8 @@ It is useful, in single- or dual-probe settings, for:
 
 Please refer to the **executor notebook** for further instructions.
 
+This pipeline was used to process data in "Behavioral decomposition reveals rich encoding structure employed across neocortex" ([bioRxiv](https://www.biorxiv.org/content/10.1101/2022.02.08.479515v1), 2022).
+
 ### Installation
 ---------------------------------------------------------------------------------
 ##### Prerequisites
